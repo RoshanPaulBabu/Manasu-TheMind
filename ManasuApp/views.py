@@ -122,8 +122,91 @@ def questions(request):
                 UserResponse.objects.create(user=request.user, question=question, option=option)
 
         messages.success(request, 'Responses saved successfully.')
-        return redirect('home')
+        # return redirect('home')
+        # Call the function to generate the summary
+        return redirect('generate_summary')  # Redirect to the summary page to view the result
 
     questions = Question.objects.filter(problem=mental_health_problem)
     return render(request, 'questions.html', {'questions': questions})
+
+
+import os
+import datetime
+import google.generativeai as genai
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from .models import MentalHealthSummary, UserResponse, MentalHealthProblem
+
+# Configure Google AI SDK
+genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+
+# Create the model with the system instruction
+generation_config = {
+    "temperature": 1,
+    "top_p": 0.95,
+    "top_k": 64,
+    "max_output_tokens": 8192,
+    "response_mime_type": "text/plain",
+}
+
+model = genai.GenerativeModel(
+    model_name="gemini-1.5-flash",
+    generation_config=generation_config,
+    system_instruction="You are a mental health analyzer. You should make a summary of the user's mental health problem by analyzing the questions and answers responded by the user and other details like name, gender, and age.",
+)
+
+@login_required
+def generate_summary(request):
+    user_profile = request.user.profile
+    mental_health_problem = user_profile.mental_health_problem
+
+    if not mental_health_problem:
+        messages.error(request, "Mental health problem not set for the user.")
+        return redirect('home')
+
+    # Fetch questions and responses
+    responses = UserResponse.objects.filter(user=request.user, question__problem=mental_health_problem)
+    questions_responses = "\n".join(
+        [f"Question: {response.question.text}\nAnswer: {response.option.text}" for response in responses]
+    )
+    
+    # Calculate score (example calculation)
+    score = sum(response.option.value for response in responses)
+
+    # Prepare the input for the AI model
+    name = request.user.username
+    age = (datetime.date.today() - user_profile.date_of_birth).days // 365 if user_profile.date_of_birth else "unknown"
+    gender = user_profile.gender if user_profile.gender else "unknown"
+    summary_input = (
+        f"User's name: {name}, Age: {age}, Gender: {gender}. Mental health problem: {mental_health_problem.name}.\n"
+        f"User's responses indicate a score of {score}.\n"
+        f"Questions and Answers:\n{questions_responses}\n"
+        "Based on this information, generate a detailed mental health summary and recommendations."
+    )
+
+    # Generate summary using the AI model
+    chat_session = model.start_chat(
+        history=[
+            {
+                "role": "user",
+                "parts": [summary_input],
+            }
+        ]
+    )
+
+    response = chat_session.send_message(summary_input)
+
+    # Save or update the mental health summary
+    summary_obj, created = MentalHealthSummary.objects.update_or_create(
+        user=request.user,
+        defaults={
+            'score': score,
+            'summary': response.text,
+            'recommendations': "Consider consulting a mental health professional for further assessment and support."
+        }
+    )
+
+    return render(request, 'summary.html', {'summary': summary_obj})
+
 
