@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register</title>
+    <style>
+        .messages {
+            list-style: none;
+            padding: 0;
+        }
+        .messages li {
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid;
+            border-radius: 4px;
+        }
+        .error { border-color: red; color: red; }
+        .success { border-color: green; color: green; }
+    </style>
+</head>
+<body>
+    <h2>Register</h2>
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li class="{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        
+        <label for="full-name">Full Name:</label>
+        <input type="text" id="full-name" name="full-name" required><br>
+        
+        <label for="your-email">Email:</label>
+        <input type="email" id="your-email" name="your-email" required><br>
+        
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required><br>
+        
+        <label for="confirm-password">Confirm Password:</label>
+        <input type="password" id="confirm-password" name="confirm-password" required><br>
+        
+        <label for="phone-number">Phone Number:</label>
+        <input type="text" id="phone-number" name="phone-number" required><br>
+        
+        <label for="address">Address:</label>
+        <textarea id="address" name="address"></textarea><br>
+        
+        <label for="date-of-birth">Date of Birth:</label>
+        <input type="date" id="date-of-birth" name="date-of-birth"><br>
+        
+        <label for="gender">Gender:</label>
+        <select id="gender" name="gender">
+            <option value="">Select...</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+        </select><br>
+        
+        <label for="emergency-contact">Emergency Contact:</label>
+        <input type="text" id="emergency-contact" name="emergency-contact"><br>
+        
+        <label for="emergency-contact-relationship">Emergency Contact Relationship:</label>
+        <input type="text" id="emergency-contact-relationship" name="emergency-contact-relationship"><br>
+
+        <label for="mental-health-problem">What brings you here?</label>
+        <select id="mental-health-problem" name="mental-health-problem" required>
+            <option value="">Select a problem...</option>
+            {% for problem in mental_health_problems %}
+                <option value="{{ problem.id }}">{{ problem.name }}</option>
+            {% endfor %}
+        </select><br>
+        
+        <button type="submit">Register</button>
+    </form>
+    <a href="{% url 'login' %}">Already have an account? Log in</a>
+</body>
+</html>

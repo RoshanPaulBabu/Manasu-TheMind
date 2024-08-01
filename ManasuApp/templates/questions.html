@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Questions</title>
+</head>
+<body>
+    <h2>Questions</h2>
+
+    <form method="post">
+        {% csrf_token %}
+        {% for question in questions %}
+            <fieldset>
+                <legend>{{ question.text }}</legend>
+                {% for option in question.options.all %}
+                    <label>
+                        <input type="radio" name="question_{{ question.id }}" value="{{ option.id }}" required>
+                        {{ option.text }}
+                    </label><br>
+                {% endfor %}
+            </fieldset>
+        {% endfor %}
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>
