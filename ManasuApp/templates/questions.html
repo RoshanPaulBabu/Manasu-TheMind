@@ -1,25 +1,25 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Questions</title>
-</head>
-<body>
-    <h2>Questions</h2>
 
+<div class="container">
+    <h1>{{ problem.name }} Questionnaire</h1>
     <form method="post">
         {% csrf_token %}
         {% for question in questions %}
-            <fieldset>
-                <legend>{{ question.text }}</legend>
-                {% for option in question.options.all %}
-                    <label>
-                        <input type="radio" name="question_{{ question.id }}" value="{{ option.id }}" required>
-                        {{ option.text }}
-                    </label><br>
-                {% endfor %}
-            </fieldset>
+            <div class="question-container">
+                <h3>{{ question.text }}</h3>
+                {% if question.question_type == 'MC' %}
+                    {% for option in question.options.all %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="question_{{ question.id }}" id="option_{{ option.id }}" value="{{ option.id }}" required>
+                            <label class="form-check-label" for="option_{{ option.id }}">
+                                {{ option.text }}
+                            </label>
+                        </div>
+                    {% endfor %}
+                {% elif question.question_type == 'OE' %}
+                    <textarea class="form-control" name="question_{{ question.id }}" rows="3" required></textarea>
+                {% endif %}
+            </div>
         {% endfor %}
-        <button type="submit">Submit</button>
+        <button type="submit" class="btn btn-primary mt-3">Submit</button>
     </form>
-</body>
-</html>
+</div>

@@ -12,12 +12,12 @@ User = get_user_model()
 
 def register(request):
     if request.method == 'POST':
-        full_name = request.POST.get('full-name')
+        first_name = request.POST.get('first-name')
+        last_name = request.POST.get('last-name')
         email = request.POST.get('your-email')
         password = request.POST.get('password')
         confirm_password = request.POST.get('confirm-password')
         phone_number = request.POST.get('phone-number')
-        address = request.POST.get('address')
         date_of_birth = request.POST.get('date-of-birth')
         gender = request.POST.get('gender')
         emergency_contact = request.POST.get('emergency-contact')
@@ -55,7 +55,13 @@ def register(request):
 
         # Create user
         try:
-            user = User.objects.create_user(username=email, email=email, password=password)
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name
+            )
         except Exception as e:
             messages.error(request, f'Error: {str(e)}')
             return render(request, 'registration/register.html')
@@ -65,7 +71,6 @@ def register(request):
             UserProfile.objects.create(
                 user=user,
                 phone_number=phone_number,
-                address=address,
                 date_of_birth=date_of_birth,
                 gender=gender,
                 emergency_contact=emergency_contact,
@@ -90,6 +95,7 @@ def register(request):
     mental_health_problems = MentalHealthProblem.objects.all()
     return render(request, 'registration/register.html', {'mental_health_problems': mental_health_problems})
 
+
 def user_login(request):
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -111,23 +117,55 @@ def home(request):
 @login_required
 def questions(request):
     user_profile = request.user.profile
-    mental_health_problem = user_profile.mental_health_problem
+    problem = user_profile.mental_health_problem
+    questions = problem.questions.all()
 
     if request.method == 'POST':
-        for key, value in request.POST.items():
-            if key.startswith('question_'):
-                question_id = key.split('_')[1]
-                question = get_object_or_404(Question, id=question_id)
-                option = get_object_or_404(Option, id=value)
-                UserResponse.objects.create(user=request.user, question=question, option=option)
+        for question in questions:
+            if question.question_type == 'MC':
+                option_id = request.POST.get(f'question_{question.id}')
+                if option_id:
+                    option = Option.objects.get(id=option_id)
+                    
+                    # Save to UserResponseHistory
+                    UserResponseHistory.objects.create(
+                        user=request.user,
+                        question=question,
+                        option=option
+                    )
+                    
+                    # Update or create UserResponse
+                    UserResponse.objects.update_or_create(
+                        user=request.user,
+                        question=question,
+                        defaults={'option': option, 'open_ended_response': None}
+                    )
 
-        messages.success(request, 'Responses saved successfully.')
-        # return redirect('home')
-        # Call the function to generate the summary
-        return redirect('generate_summary')  # Redirect to the summary page to view the result
+            elif question.question_type == 'OE':
+                response_text = request.POST.get(f'question_{question.id}')
+                if response_text:
+                    # Save to UserResponseHistory
+                    UserResponseHistory.objects.create(
+                        user=request.user,
+                        question=question,
+                        open_ended_response=response_text
+                    )
+                    
+                    # Update or create UserResponse
+                    UserResponse.objects.update_or_create(
+                        user=request.user,
+                        question=question,
+                        defaults={'option': None, 'open_ended_response': response_text}
+                    )
+        
+        return redirect('generate_summary')  # Redirect to a thank you page after submission
 
-    questions = Question.objects.filter(problem=mental_health_problem)
-    return render(request, 'questions.html', {'questions': questions})
+    context = {
+        'problem': problem,
+        'questions': questions,
+    }
+    return render(request, 'questions.html', context)
+
 
 
 import os
@@ -167,21 +205,27 @@ def generate_summary(request):
 
     # Fetch questions and responses
     responses = UserResponse.objects.filter(user=request.user, question__problem=mental_health_problem)
-    questions_responses = "\n".join(
-        [f"Question: {response.question.text}\nAnswer: {response.option.text}" for response in responses]
-    )
-    
-    # Calculate score (example calculation)
-    score = sum(response.option.value for response in responses)
+
+    # Aggregate responses
+    questions_responses = []
+    for response in responses:
+        question_text = response.question.text
+        if response.option:
+            answer_text = response.option.text
+        else:
+            answer_text = response.open_ended_response
+        
+        questions_responses.append(f"Question: {question_text}\nAnswer: {answer_text}")
+
+    questions_responses_text = "\n".join(questions_responses)
 
     # Prepare the input for the AI model
-    name = request.user.username
+    name = f"{request.user.first_name} {request.user.last_name}"
     age = (datetime.date.today() - user_profile.date_of_birth).days // 365 if user_profile.date_of_birth else "unknown"
     gender = user_profile.gender if user_profile.gender else "unknown"
     summary_input = (
         f"User's name: {name}, Age: {age}, Gender: {gender}. Mental health problem: {mental_health_problem.name}.\n"
-        f"User's responses indicate a score of {score}.\n"
-        f"Questions and Answers:\n{questions_responses}\n"
+        f"Questions and Answers:\n{questions_responses_text}\n"
         "Based on this information, generate a detailed mental health summary and recommendations."
     )
 
@@ -201,12 +245,10 @@ def generate_summary(request):
     summary_obj, created = MentalHealthSummary.objects.update_or_create(
         user=request.user,
         defaults={
-            'score': score,
             'summary': response.text,
             'recommendations': "Consider consulting a mental health professional for further assessment and support."
         }
     )
 
     return render(request, 'summary.html', {'summary': summary_obj})
-
 
