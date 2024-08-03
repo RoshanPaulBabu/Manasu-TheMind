@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat with AI</title>
+</head>
+<body>
+    <h1>Chat with AI</h1>
+    <div id="chat-box">
+        {% if response %}
+            <p><strong>AI:</strong> {{ response }}</p>
+        {% endif %}
+    </div>
+    <form method="POST">
+        {% csrf_token %}
+        <textarea name="message" rows="5" cols="40" placeholder="Type your message..."></textarea>
+        <br>
+        <button type="submit">Send</button>
+    </form>
+</body>
+</html>

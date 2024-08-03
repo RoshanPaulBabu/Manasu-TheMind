@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate, get_user_model
+from django.contrib.auth import login, authenticate, get_user_model, logout
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.core.exceptions import ValidationError
@@ -104,11 +104,15 @@ def user_login(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            messages.success(request, f'Welcome back, {user.username}!')
+            messages.success(request, f'Welcome back, {request.user.first_name} {request.user.last_name}!')
             return redirect('home')  # Redirect to a home page or dashboard
         else:
             messages.error(request, 'Invalid username or password.')
     return render(request, 'registration/login.html')
+
+def user_logout(request):
+    logout(request)
+    return redirect('/') 
 
 def home(request):
     return render(request, 'home.html')
@@ -174,24 +178,25 @@ import google.generativeai as genai
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import MentalHealthSummary, UserResponse, MentalHealthProblem
+from django.utils import timezone
 
 # Configure Google AI SDK
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 
-# Create the model with the system instruction
-generation_config = {
-    "temperature": 1,
-    "top_p": 0.95,
-    "top_k": 64,
+
+# AI model configuration for the summary generation
+summary_generation_config = {
+    "temperature": 0.7,
+    "top_p": 0.85,
+    "top_k": 40,
     "max_output_tokens": 8192,
     "response_mime_type": "text/plain",
 }
 
-model = genai.GenerativeModel(
+summary_model = genai.GenerativeModel(
     model_name="gemini-1.5-flash",
-    generation_config=generation_config,
-    system_instruction="You are a mental health analyzer. You should make a summary of the user's mental health problem by analyzing the questions and answers responded by the user and other details like name, gender, and age.",
+    generation_config=summary_generation_config,
+    system_instruction="You are a mental health analyst. Generate a detailed report based on the user's mental health data",
 )
 
 @login_required
@@ -226,11 +231,11 @@ def generate_summary(request):
     summary_input = (
         f"User's name: {name}, Age: {age}, Gender: {gender}. Mental health problem: {mental_health_problem.name}.\n"
         f"Questions and Answers:\n{questions_responses_text}\n"
-        "Based on this information, generate a detailed mental health summary and recommendations."
+        "Based on this information, generate a detailed mental health report."
     )
 
     # Generate summary using the AI model
-    chat_session = model.start_chat(
+    chat_session = summary_model.start_chat(
         history=[
             {
                 "role": "user",
@@ -241,14 +246,113 @@ def generate_summary(request):
 
     response = chat_session.send_message(summary_input)
 
-    # Save or update the mental health summary
+    # Save the new summary to history
+    MentalHealthSummaryHistory.objects.create(
+        user=request.user,
+        summary=response.text
+    )
+
+    # Update or create the current mental health summary
     summary_obj, created = MentalHealthSummary.objects.update_or_create(
         user=request.user,
         defaults={
-            'summary': response.text,
-            'recommendations': "Consider consulting a mental health professional for further assessment and support."
+            'summary': response.text
         }
     )
 
     return render(request, 'summary.html', {'summary': summary_obj})
+
+
+# AI model configuration for the chatbot
+chatbot_generation_config = {
+    "temperature": 1,
+    "top_p": 0.9,
+    "top_k": 50,
+    "max_output_tokens": 4096,
+    "response_mime_type": "text/plain",
+}
+
+chatbot_model = genai.GenerativeModel(
+    model_name="gemini-1.5-flash",
+    generation_config=chatbot_generation_config,
+    system_instruction="You are a mental health chatbot that provides empathetic and practical support to users based on their recent activities and mood logs.",
+)
+
+@login_required
+def chat_with_ai(request):
+    user = request.user
+
+    # Gather the last 3 journal entries
+    last_journal_entries = JournalEntry.objects.filter(user=user).order_by('-created_at')[:3]
+    last_journal_entries_text = "\n".join([f"{entry.title}: {entry.content}" for entry in last_journal_entries])
+
+    # Get the latest mental health summary
+    try:
+        mental_health_summary = user.mental_health_summary.summary
+    except MentalHealthSummary.DoesNotExist:
+        mental_health_summary = "No summary available."
+
+    # Gather the last 3 completed activities and 3 pending activities
+    completed_activities = Activity.objects.filter(user=user, completed=True).order_by('-created_at')[:3]
+    pending_activities = Activity.objects.filter(user=user, completed=False).order_by('-created_at')[:3]
+
+    completed_activities_text = "\n".join([activity.title for activity in completed_activities])
+    pending_activities_text = "\n".join([activity.title for activity in pending_activities])
+
+    # Gather the last 3 achieved goals and 3 pending goals
+    achieved_goals = Goal.objects.filter(user=user, achieved=True).order_by('-created_at')[:3]
+    pending_goals = Goal.objects.filter(user=user, achieved=False).order_by('-created_at')[:3]
+
+    achieved_goals_text = "\n".join([goal.title for goal in achieved_goals])
+    pending_goals_text = "\n".join([goal.title for goal in pending_goals])
+
+    # Gather the last 3 mood logs
+    last_mood_logs = MoodLog.objects.filter(user=user).order_by('-timestamp')[:3]
+    last_mood_logs_text = "\n".join([f"{log.mood}: {log.intensity}/10" for log in last_mood_logs])
+
+    # Prepare the chat context
+    current_datetime = timezone.now().strftime('%Y-%m-%d %H:%M:%S')
+    age = (timezone.now().date() - user.profile.date_of_birth).days // 365 if user.profile.date_of_birth else "unknown"
+    user_name = user.username
+
+    # System prompt for the AI model
+    system_prompt = (
+        f"User: {user_name}, Age: {age}, Date and Time: {current_datetime}.\n"
+        f"Last 3 Journal Entries:\n{last_journal_entries_text}\n"
+        f"Mental Health Summary:\n{mental_health_summary}\n"
+        f"Last 3 Completed Activities:\n{completed_activities_text}\n"
+        f"Pending Activities:\n{pending_activities_text}\n"
+        f"Last 3 Achieved Goals:\n{achieved_goals_text}\n"
+        f"Pending Goals:\n{pending_goals_text}\n"
+        f"Last 3 Mood Logs:\n{last_mood_logs_text}\n"
+        "Use this context to provide a thoughtful response to the user's queries."
+    )
+
+    if request.method == 'POST':
+        user_message = request.POST.get('message')
+
+        # Start a chat session with AI
+        chat_session = chatbot_model.start_chat(
+            history=[
+                {
+                    "role": "model",
+                    "parts": [system_prompt],
+                },
+                {
+                    "role": "user",
+                    "parts": [user_message],
+                }
+            ]
+        )
+
+        ai_response = chat_session.send_message(user_message)
+
+        # Save chat history
+        Chat.objects.create(user=user, message=user_message, sender='user')
+        Chat.objects.create(user=user, message=ai_response.text, sender='bot')
+
+        return render(request, 'chat.html', {'response': ai_response.text})
+
+    return render(request, 'chat.html')
+
 

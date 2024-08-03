@@ -7,4 +7,6 @@ urlpatterns = [
     path('home/', views.home, name='home'),
     path('questions/', views.questions, name='questions'),
     path('summary/', views.generate_summary, name='generate_summary'),
+    path('logout/', views.user_logout, name='logout'),
+    path('chat/', views.chat_with_ai, name='chat_with_ai'),
 ]

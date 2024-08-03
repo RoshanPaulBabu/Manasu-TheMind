@@ -8,9 +8,7 @@
 
     <p><strong>Mental Health Problem:</strong> {{ summary.user.profile.mental_health_problem.name }}</p>
     <p><strong>Assessment Date:</strong> {{ summary.assessment_date }}</p>
-    <p><strong>Score:</strong> {{ summary.score }}</p>
-    <p><strong>Summary:</strong> {{ summary.summary }}</p>
-    <p><strong>Recommendations:</strong> {{ summary.recommendations }}</p>
+    <p><strong>Summary:</strong> {{ summary.summary|safe }}</p>
 
     <a href="{% url 'home' %}">Return to Home</a>
 </body>
