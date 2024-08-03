@@ -356,3 +356,115 @@ def chat_with_ai(request):
     return render(request, 'chat.html')
 
 
+
+# Create the model with the system instruction
+generation_config = {
+    "temperature": 1,
+    "top_p": 0.95,
+    "top_k": 64,
+    "max_output_tokens": 8192,
+    "response_mime_type": "text/plain",
+}
+
+model = genai.GenerativeModel(
+    model_name="gemini-1.5-flash",
+    generation_config=generation_config,
+    system_instruction="You are a mental health analyzer. You should provide updates for activities, goals, mental health scores, and summaries based on the context given in the input. Output should be in the structured format as follows:\n"
+                       "Mental Health Summary Update:\n[Updated summary text here]\n"
+                       "Mental Health Score:\n[Score as a decimal value, e.g., 85.5 out of 100]\n"
+                       "New Activities:\n- [Activity 1 title] (Optional description: [description])\n- [Activity 2 title] (Optional description: [description])\n- [Activity 3 title] (Optional description: [description])\n"
+                       "New Goals:\n- [Goal 1 title] (Optional description: [description])\n- [Goal 2 title] (Optional description: [description])\n"
+                       "Additional Notes:\n[Any additional notes or insights from the AI]\n"
+)
+
+@login_required
+def analyze_and_update_session(request):
+    user = request.user
+    user_profile = user.profile
+    current_datetime = datetime.datetime.now()
+    
+    # Fetch data for analysis
+    journal_entries = JournalEntry.objects.filter(user=user).order_by('-entry_date')[:3]
+    last_journal_entries_text = "\n".join([f"{entry.title}: {entry.content}" for entry in journal_entries])
+    
+    summary = get_object_or_404(MentalHealthSummary, user=user)
+    mental_health_summary = summary.summary
+
+    activities = Activity.objects.filter(user=user).order_by('-created_at')
+    completed_activities = activities.filter(completed=True)[:3]
+    pending_activities = activities.filter(completed=False)[:3]
+    
+    completed_activities_text = "\n".join([f"{activity.title} (Optional description: {activity.description})" for activity in completed_activities])
+    pending_activities_text = "\n".join([f"{activity.title} (Optional description: {activity.description})" for activity in pending_activities])
+    
+    goals = Goal.objects.filter(user=user).order_by('-created_at')
+    achieved_goals = goals.filter(achieved=True)[:3]
+    pending_goals = goals.filter(achieved=False)[:3]
+    
+    achieved_goals_text = "\n".join([f"{goal.title} (Optional description: {goal.description})" for goal in achieved_goals])
+    pending_goals_text = "\n".join([f"{goal.title} (Optional description: {goal.description})" for goal in pending_goals])
+    
+    mood_logs = MoodLog.objects.filter(user=user).order_by('-timestamp')[:3]
+    last_mood_logs_text = "\n".join([f"{log.mood} (Intensity: {log.intensity}) - {log.timestamp.strftime('%Y-%m-%d %H:%M:%S')}" for log in mood_logs])
+    
+    # Prepare the chat history for analysis
+    chat_history = Chat.objects.filter(user=user).order_by('timestamp')
+    chat_history_text = "\n".join([f"{chat.sender.capitalize()}: {chat.message}" for chat in chat_history])
+    
+    analysis_input = (
+        f"User: {user.first_name} {user.last_name}, Age: {(datetime.date.today() - user_profile.date_of_birth).days // 365 if user_profile.date_of_birth else 'unknown'}, Date and Time: {current_datetime}.\n"
+        f"Last 3 Journal Entries:\n{last_journal_entries_text}\n"
+        f"Mental Health Summary:\n{mental_health_summary}\n"
+        f"Last 3 Completed Activities:\n{completed_activities_text}\n"
+        f"Pending Activities:\n{pending_activities_text}\n"
+        f"Last 3 Achieved Goals:\n{achieved_goals_text}\n"
+        f"Pending Goals:\n{pending_goals_text}\n"
+        f"Last 3 Mood Logs:\n{last_mood_logs_text}\n"
+        f"Chat History:\n{chat_history_text}\n"
+        "Use this context to provide a thoughtful response to the user's queries."
+    )
+
+    chat_session = model.start_chat(
+        history=[
+            {
+                "role": "system",
+                "parts": [analysis_input],
+            }
+        ]
+    )
+
+    response = chat_session.send_message(analysis_input)
+    response_text = response.text
+
+    # Parsing the response
+    summary_update = response_text.split("Mental Health Summary Update:")[1].split("Mental Health Score:")[0].strip()
+    mental_health_score = float(response_text.split("Mental Health Score:")[1].split("New Activities:")[0].strip())
+
+    new_activities = response_text.split("New Activities:")[1].split("New Goals:")[0].strip().split("\n")
+
+    new_goals = response_text.split("New Goals:")[1].split("Pending Goals:")[0].strip().split("\n")
+    # Process and insert the parsed data into models
+    if summary_update:
+        MentalHealthSummary.objects.update_or_create(user=user, defaults={'summary': summary_update})
+        MentalHealthSummaryHistory.objects.create(user=user,summary=summary_update)
+
+    if mental_health_score:
+        MentalHealthScore.objects.create(user=user, score=mental_health_score)
+
+    for activity_line in new_activities:
+        if activity_line.strip():
+            title, *desc = activity_line.split("(Optional description:")
+            description = desc[0].replace(")", "").strip() if desc else None
+            Activity.objects.create(user=user, title=title.strip(), description=description, suggested_by_ai=True)
+
+    for goal_line in new_goals:
+        if goal_line.strip():
+            title, *desc = goal_line.split("(Optional description:")
+            description = desc[0].replace(")", "").strip() if desc else None
+            Goal.objects.create(user=user, title=title.strip(), description=description, suggested_by_ai=True)
+
+    # Similarly, handle pending activities and goals if needed...
+
+    return redirect('home')  # Redirect to a relevant view
+
+

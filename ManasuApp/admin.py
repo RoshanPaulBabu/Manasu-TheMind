@@ -61,6 +61,8 @@ admin.site.register(UserResponseHistory, UserResponseHistoryAdmin)
 admin.site.register(UserProfile, UserProfileAdmin)
 
 
+admin.site.register(Chat)
+
 @admin.register(MoodLog)
 class MoodLogAdmin(admin.ModelAdmin):
     list_display = ('user', 'mood', 'intensity', 'timestamp')
