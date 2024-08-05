@@ -12,6 +12,5 @@ urlpatterns = [
     path('analyze/', views.analyze_and_update_session, name='analyze_and_update_session'),
     path('log-mood/', views.log_mood, name='log_mood'),
     path('activities/', views.activities_view, name='activities_view'),
-    path('activities/update/<int:activity_id>/', views.update_activity, name='update_activity'),
-    path('activities/delete/<int:activity_id>/', views.delete_activity, name='delete_activity'),
+    path('goals/', views.goals_view, name='goals_view'),
 ]

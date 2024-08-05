@@ -1,5 +1,5 @@
 from django import forms
-from .models import Activity
+from .models import Activity, Goal
 
 class ActivityForm(forms.ModelForm):
     class Meta:
@@ -8,3 +8,8 @@ class ActivityForm(forms.ModelForm):
         widgets = {
             'due_date': forms.DateInput(attrs={'type': 'date'}),
         }
+
+class GoalForm(forms.ModelForm):
+    class Meta:
+        model = Goal
+        fields = ['title', 'description', 'target_date', 'achieved']

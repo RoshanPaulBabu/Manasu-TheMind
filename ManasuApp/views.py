@@ -520,7 +520,7 @@ def log_mood(request):
     return render(request, 'log_mood.html')
 
 
-from .forms import ActivityForm
+from .forms import ActivityForm, GoalForm
 
 def activities_view(request):
     # Fetch user activities
@@ -604,29 +604,52 @@ def activities_view(request):
 
     return render(request, 'activities.html', context)
 
-# Update View
-def update_activity(request, activity_id):
-    activity = get_object_or_404(Activity, id=activity_id, user=request.user)
+
+
+
+
+def goals_view(request):
+    user_goals = Goal.objects.filter(user=request.user, suggested_by_ai=False)
+    ai_suggested_goals = Goal.objects.filter(user=request.user, suggested_by_ai=True)
+
+    # Initialize forms
+    form = GoalForm()
+    edit_form = GoalForm()  # Will be populated with specific goal data later
+    delete_goal_id = None  # Will hold the ID of the goal to be deleted
 
     if request.method == "POST":
-        form = ActivityForm(request.POST, instance=activity)
-        if form.is_valid():
-            form.save()
-            return redirect('activities_view')
-    else:
-        form = ActivityForm(instance=activity)
+        if 'add_goal' in request.POST:
+            form = GoalForm(request.POST)
+            if form.is_valid():
+                new_goal = form.save(commit=False)
+                new_goal.user = request.user
+                new_goal.save()
+                return redirect('goals_view')
+        elif 'edit_goal' in request.POST:
+            goal_id = request.POST.get('goal_id')
+            goal = get_object_or_404(Goal, id=goal_id, user=request.user)
+            edit_form = GoalForm(request.POST, instance=goal)
+            if edit_form.is_valid():
+                edit_form.save()
+                return redirect('goals_view')
+        elif 'delete_goal' in request.POST:
+            delete_goal_id = request.POST.get('goal_id')
+            goal = get_object_or_404(Goal, id=delete_goal_id, user=request.user)
+            goal.delete()
+            return redirect('goals_view')
+        elif 'move_to_regular' in request.POST:
+            goal_id = request.POST.get('goal_id')
+            goal = get_object_or_404(Goal, id=goal_id, user=request.user)
+            goal.suggested_by_ai = False
+            goal.save()
+            return redirect('goals_view')
 
-    context = {'form': form}
-    return render(request, 'update_activity.html', context)
+    context = {
+        'user_goals': user_goals,
+        'ai_suggested_goals': ai_suggested_goals,
+        'form': form,
+        'edit_form': edit_form,
+        'delete_goal_id': delete_goal_id,
+    }
 
-# Delete View
-def delete_activity(request, activity_id):
-    activity = get_object_or_404(Activity, id=activity_id, user=request.user)
-    if request.method == "POST":
-        activity.delete()
-        return redirect('activities_view')
-
-    context = {'activity': activity}
-    return render(request, 'delete_activity.html', context)
-
-
+    return render(request, 'goals.html', context)
