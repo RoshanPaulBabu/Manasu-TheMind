@@ -2,7 +2,6 @@ Django
 google-generativeai
 Pillow
 requests
-libpq-dev
 psycopg2
 gunicorn
 whitenoise
