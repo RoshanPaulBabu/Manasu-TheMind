@@ -3,3 +3,5 @@ google-generativeai
 Pillow
 requests
 psycopg2
+gunicorn
+whitenoise

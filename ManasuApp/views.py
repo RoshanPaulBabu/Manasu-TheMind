@@ -1,38 +1,41 @@
-from django.shortcuts import render, redirect
+import json
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, get_user_model, logout
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 from .models import *
-from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+import os
+import datetime
+import google.generativeai as genai
+from django.utils import timezone
 
 User = get_user_model()
 
 def register(request):
     if request.method == 'POST':
-        first_name = request.POST.get('first-name')
-        last_name = request.POST.get('last-name')
-        email = request.POST.get('your-email')
-        password = request.POST.get('password')
-        confirm_password = request.POST.get('confirm-password')
-        phone_number = request.POST.get('phone-number')
-        date_of_birth = request.POST.get('date-of-birth')
-        gender = request.POST.get('gender')
-        emergency_contact = request.POST.get('emergency-contact')
-        emergency_contact_relationship = request.POST.get('emergency-contact-relationship')
-        mental_health_problem_id = request.POST.get('mental-health-problem')
+        form_data = request.POST
+        first_name = form_data.get('first-name')
+        last_name = form_data.get('last-name')
+        email = form_data.get('your-email')
+        password = form_data.get('password')
+        confirm_password = form_data.get('confirm-password')
+        phone_number = form_data.get('phone-number')
+        date_of_birth = form_data.get('date-of-birth')
+        gender = form_data.get('gender')
+        emergency_contact = form_data.get('emergency-contact')
+        emergency_contact_relationship = form_data.get('emergency-contact-relationship')
+        mental_health_problem_id = form_data.get('mental-health-problem')
 
-        # Check if passwords match
+        # Validate password
         if password != confirm_password:
             messages.error(request, 'Passwords do not match!')
             return render(request, 'registration/register.html')
 
-        # Check password strength using Django's built-in validators
         try:
-            if password:  # Ensure password is not None or empty
-                validate_password(password)
+            validate_password(password)
         except ValidationError as e:
             messages.error(request, ', '.join(e.messages))
             return render(request, 'registration/register.html')
@@ -44,7 +47,7 @@ def register(request):
             return redirect('register')
 
         # Validate phone number
-        if not phone_number.isnumeric() or len(phone_number) < 10 or len(phone_number) > 15:
+        if not phone_number.isnumeric() or not (10 <= len(phone_number) <= 15):
             messages.error(request, 'Phone number must be between 10 and 15 digits and contain only numbers.')
             return render(request, 'registration/register.html')
 
@@ -62,12 +65,6 @@ def register(request):
                 first_name=first_name,
                 last_name=last_name
             )
-        except Exception as e:
-            messages.error(request, f'Error: {str(e)}')
-            return render(request, 'registration/register.html')
-
-        # Create user profile
-        try:
             UserProfile.objects.create(
                 user=user,
                 phone_number=phone_number,
@@ -77,25 +74,23 @@ def register(request):
                 emergency_contact_relationship=emergency_contact_relationship,
                 mental_health_problem=mental_health_problem
             )
+            user = authenticate(request, username=email, password=password)
+            if user is not None:
+                login(request, user)
+                messages.success(request, 'Your account has been registered successfully!')
+                return redirect('questions')
         except Exception as e:
-            user.delete()  # Rollback user creation if profile creation fails
+            if user:
+                user.delete()
             messages.error(request, f'Error: {str(e)}')
-            return render(request, 'registration/register.html')
-
-        # Authenticate and login user
-        user = authenticate(request, username=email, password=password)
-        if user is not None:
-            login(request, user)
-            messages.success(request, 'Your account has been registered successfully!')
-            return redirect('questions')  # Adjust this to your actual redirect target
-        else:
-            messages.error(request, 'Failed to login user.')
             return render(request, 'registration/register.html')
 
     mental_health_problems = MentalHealthProblem.objects.all()
     return render(request, 'registration/register.html', {'mental_health_problems': mental_health_problems})
 
 
+
+#User login view
 def user_login(request):
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -110,10 +105,14 @@ def user_login(request):
             messages.error(request, 'Invalid username or password.')
     return render(request, 'registration/login.html')
 
+#user logout view
 def user_logout(request):
     logout(request)
     return redirect('/') 
 
+
+#dashboard view
+@login_required
 def home(request):
     return render(request, 'home.html')
 
@@ -130,39 +129,30 @@ def questions(request):
                 option_id = request.POST.get(f'question_{question.id}')
                 if option_id:
                     option = Option.objects.get(id=option_id)
-                    
-                    # Save to UserResponseHistory
                     UserResponseHistory.objects.create(
                         user=request.user,
                         question=question,
                         option=option
                     )
-                    
-                    # Update or create UserResponse
                     UserResponse.objects.update_or_create(
                         user=request.user,
                         question=question,
                         defaults={'option': option, 'open_ended_response': None}
                     )
-
             elif question.question_type == 'OE':
                 response_text = request.POST.get(f'question_{question.id}')
                 if response_text:
-                    # Save to UserResponseHistory
                     UserResponseHistory.objects.create(
                         user=request.user,
                         question=question,
                         open_ended_response=response_text
                     )
-                    
-                    # Update or create UserResponse
                     UserResponse.objects.update_or_create(
                         user=request.user,
                         question=question,
                         defaults={'option': None, 'open_ended_response': response_text}
                     )
-        
-        return redirect('generate_summary')  # Redirect to a thank you page after submission
+        return redirect('generate_summary')
 
     context = {
         'problem': problem,
@@ -172,13 +162,6 @@ def questions(request):
 
 
 
-import os
-import datetime
-import google.generativeai as genai
-from django.shortcuts import render, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.utils import timezone
 
 # Configure Google AI SDK
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
@@ -263,6 +246,8 @@ def generate_summary(request):
     return render(request, 'summary.html', {'summary': summary_obj})
 
 
+
+
 # AI model configuration for the chatbot
 chatbot_generation_config = {
     "temperature": 1,
@@ -275,14 +260,19 @@ chatbot_generation_config = {
 chatbot_model = genai.GenerativeModel(
     model_name="gemini-1.5-flash",
     generation_config=chatbot_generation_config,
-    system_instruction = "You are a mental health chatbot providing empathetic and practical support based on recent activities, mood logs, and other user data. Ask users about their past experiences and what may have contributed to their current state. Offer tips and strategies to improve their mental well-being. If you gather sufficient data to determine mental health condtion and can suggest activities and a score out of 100 (within 10 messages) , trigger the view 'analyze_and_update_session' by including the command '[analyze_and_update_session]'.",
+    system_instruction = "You are a mental health chatbot providing empathetic and practical support based on recent activities, mood logs, and other user data. Engage with users to understand their experiences and factors contributing to their current state. Offer actionable tips and strategies to improve their mental well-being. Aim to gather sufficient data to determine the user's mental health condition and provide a score out of 100. Ensure to conclude the conversation within 10 messages. If this is achieved, trigger the view 'analyze_and_update_session' by including the command '[analyze_and_update_session]' in your response, and say: 'Hope you enjoyed our conversation. Check out the updates I made for you.'",
 
 )
 
 @login_required
 def chat_with_ai(request):
     user = request.user
-    
+
+    if not request.session.get('interaction_count'):
+        request.session['interaction_count'] = 0
+
+    print(f"Initial interaction count: {request.session['interaction_count']}")
+
     # Fetch the last 15 chat messages for the current user
     chat_history = Chat.objects.filter(user=user).order_by('-timestamp')[:15]
 
@@ -326,7 +316,6 @@ def chat_with_ai(request):
     # Prepare the chat context
     current_datetime = timezone.now().strftime('%Y-%m-%d %H:%M:%S')
     age = (timezone.now().date() - user.profile.date_of_birth).days // 365 if user.profile.date_of_birth else "unknown"
-    
 
     # System prompt for the AI model
     system_prompt = (
@@ -340,8 +329,6 @@ def chat_with_ai(request):
         f"Last 3 Mood Logs:\n{last_mood_logs_text}\n"
         "Use this context to provide a thoughtful response to the user's queries."
     )
-    
-
 
     if request.method == 'POST':
         user_message = request.POST.get('message')
@@ -361,6 +348,17 @@ def chat_with_ai(request):
             ]
         )
 
+        request.session['interaction_count'] += 1
+        print(f"Updated interaction count: {request.session['interaction_count']}")
+
+        # Check if the interaction count has reached the threshold
+        if request.session['interaction_count'] >= 20:  # Example threshold
+            # Reset the counter
+            request.session['interaction_count'] = 0
+            print("Interaction count threshold reached. Triggering analyze_and_update_session view.")
+            # Trigger the analyze_and_update_session view
+            return analyze_and_update_session(request)
+
         ai_response = chat_session.send_message(user_message)
         ai_text = ai_response.text
 
@@ -370,6 +368,7 @@ def chat_with_ai(request):
 
         # Check if AI response includes the trigger
         if "[analyze_and_update_session]" in ai_text:
+            print("Trigger found in AI response. Redirecting to analyze_and_update_session view.")
             return redirect('analyze_and_update_session')
 
         return render(request, 'chat.html', {'response': ai_text})
@@ -378,23 +377,32 @@ def chat_with_ai(request):
 
 
 
-# Create the model with the system instruction
+# AI model configuration for the summary generation
 generation_config = {
     "temperature": 1,
     "top_p": 0.95,
     "top_k": 64,
-    "max_output_tokens": 8192,
-    "response_mime_type": "text/plain",
+    "max_output_tokens": 11192,
+    "response_mime_type": "application/json",
 }
 
 model = genai.GenerativeModel(
     model_name="gemini-1.5-pro",
     generation_config=generation_config,
-    system_instruction="You are a mental health analyzer. You should provide updates for activities, goals, mental health scores, and summaries based on the context given in the input and dont repeat the activities and goals already given. Output should be strictly in the structured format as follows and dont add ** and - before or after sentence:\n"
-                       "Mental Health Summary Update:\n[Updated summary text here]\n"
-                       "Mental Health Score:\n[Score as a decimal value out of 100, e.g., 85.5]\n"
-                       "New Activities:\n- [Activity 1 title] (description: [description])\n- [Activity 2 title] (description: [description])\n- [Activity 3 title] (description: [description])\n"
-                       "New Goals:\n- [Goal 1 title] (Optional description: [description])\n- [Goal 2 title] (description: [description])\n"
+    system_instruction="You are a mental health analyzer. Provide updates for activities, goals, mental health scores, and summaries based on the context given in the input, Dont repeat anything such as goals or actvities. Output should be in the following JSON format:\n"
+                       "{\n"
+                       "  \"mental_health_summary\": \"[Updated summary text here]\",\n"
+                       "  \"mental_health_score\": [Score as a decimal value out of 100, e.g., 85.5],\n"
+                       "  \"new_goals\": [\n"
+                       "    {\"title\": \"[Goal 1 title]\", \"description\": \"[description]\"},\n"
+                       "    {\"title\": \"[Goal 2 title]\", \"description\": \"[description]\"}\n"
+                       "  ]\n"
+                       "  \"new_activities\": [\n"
+                       "    {\"title\": \"[Activity 1 title]\", \"description\": \"[description]\"},\n"
+                       "    {\"title\": \"[Activity 2 title]\", \"description\": \"[description]\"},\n"
+                       "    {\"title\": \"[Activity 3 title]\", \"description\": \"[description]\"}\n"
+                       "  ],\n"
+                       "}"
 )
 
 @login_required
@@ -402,35 +410,35 @@ def analyze_and_update_session(request):
     user = request.user
     user_profile = user.profile
     current_datetime = datetime.datetime.now()
-    
+
     # Fetch data for analysis
     journal_entries = JournalEntry.objects.filter(user=user).order_by('-entry_date')[:3]
     last_journal_entries_text = "\n".join([f"{entry.title}: {entry.content}" for entry in journal_entries])
-    
+
     summary = get_object_or_404(MentalHealthSummary, user=user)
     mental_health_summary = summary.summary
 
     activities = Activity.objects.filter(user=user).order_by('-created_at')
     completed_activities = activities.filter(completed=True)[:3]
     pending_activities = activities.filter(completed=False)[:3]
-    
+
     completed_activities_text = "\n".join([f"{activity.title} (description: {activity.description})" for activity in completed_activities])
     pending_activities_text = "\n".join([f"{activity.title} (description: {activity.description})" for activity in pending_activities])
-    
+
     goals = Goal.objects.filter(user=user).order_by('-created_at')
     achieved_goals = goals.filter(achieved=True)[:3]
     pending_goals = goals.filter(achieved=False)[:3]
-    
+
     achieved_goals_text = "\n".join([f"{goal.title} (description: {goal.description})" for goal in achieved_goals])
     pending_goals_text = "\n".join([f"{goal.title} (description: {goal.description})" for goal in pending_goals])
-    
+
     mood_logs = MoodLog.objects.filter(user=user).order_by('-timestamp')[:3]
     last_mood_logs_text = "\n".join([f"{log.mood} (Intensity: {log.intensity}) - {log.timestamp.strftime('%Y-%m-%d %H:%M:%S')}" for log in mood_logs])
-    
+
     # Prepare the chat history for analysis
-    chat_history = Chat.objects.filter(user=user).order_by('timestamp')
+    chat_history = Chat.objects.filter(user=user).order_by('timestamp')[:20]
     chat_history_text = "\n".join([f"{chat.sender.capitalize()}: {chat.message}" for chat in chat_history])
-    
+
     analysis_input = (
         f"User: {user.first_name} {user.last_name}, Age: {(datetime.date.today() - user_profile.date_of_birth).days // 365 if user_profile.date_of_birth else 'unknown'}, Date and Time: {current_datetime}.\n"
         f"Last 3 Journal Entries:\n{last_journal_entries_text}\n"
@@ -455,37 +463,170 @@ def analyze_and_update_session(request):
 
     response = chat_session.send_message(analysis_input)
     response_text = response.text
+    
     print(response_text)
 
-    # Parsing the response
-    summary_update = response_text.split("Mental Health Summary Update:")[1].split("Mental Health Score:")[0].strip()
-    mental_health_score = float(response_text.split("Mental Health Score:")[1].split("New Activities:")[0].strip())
+    # Parsing the JSON response
+    response_data = json.loads(response_text)
 
-    new_activities = response_text.split("New Activities:")[1].split("New Goals:")[0].strip().split("\n")
+    summary_update = response_data.get("mental_health_summary", "")
+    mental_health_score = response_data.get("mental_health_score", 0.0)
+    new_activities = response_data.get("new_activities", [])
+    new_goals = response_data.get("new_goals", [])
 
-    new_goals = response_text.split("New Goals:")[1].split("Pending Goals:")[0].strip().split("\n")
     # Process and insert the parsed data into models
     if summary_update:
         MentalHealthSummary.objects.update_or_create(user=user, defaults={'summary': summary_update})
-        MentalHealthSummaryHistory.objects.create(user=user,summary=summary_update)
+        MentalHealthSummaryHistory.objects.create(user=user, summary=summary_update)
 
     if mental_health_score:
         MentalHealthScore.objects.create(user=user, score=mental_health_score)
 
-    for activity_line in new_activities:
-        if activity_line.strip():
-            title, *desc = activity_line.split("(description:")
-            description = desc[0].replace(")", "").strip() if desc else None
-            Activity.objects.create(user=user, title=title.strip(), description=description, suggested_by_ai=True)
+    for activity in new_activities:
+        title = activity.get("title", "")
+        description = activity.get("description", "")
+        if title:
+            Activity.objects.create(user=user, title=title, description=description, suggested_by_ai=True)
 
-    for goal_line in new_goals:
-        if goal_line.strip():
-            title, *desc = goal_line.split("(description:")
-            description = desc[0].replace(")", "").strip() if desc else None
-            Goal.objects.create(user=user, title=title.strip(), description=description, suggested_by_ai=True)
-
-    # Similarly, handle pending activities and goals if needed...
+    for goal in new_goals:
+        title = goal.get("title", "")
+        description = goal.get("description", "")
+        if title:
+            Goal.objects.create(user=user, title=title, description=description, suggested_by_ai=True)
 
     return redirect('home')  # Redirect to a relevant view
+
+from django.http import JsonResponse
+
+@login_required
+def log_mood(request):
+    if request.method == 'POST':
+        mood = request.POST.get('mood')
+        intensity = request.POST.get('intensity')
+        notes = request.POST.get('notes')
+
+        # Create a new MoodLog entry
+        mood_log = MoodLog(
+            user=request.user,
+            mood=mood,
+            intensity=intensity,
+            notes=notes
+        )
+        mood_log.save()
+
+        # Optionally, return JSON response for AJAX handling
+        return JsonResponse({'status': 'success'})
+    
+    return render(request, 'log_mood.html')
+
+
+from .forms import ActivityForm
+
+def activities_view(request):
+    # Fetch user activities
+    user_activities = Activity.objects.filter(user=request.user, suggested_by_ai=False)
+    ai_suggested_activities = Activity.objects.filter(user=request.user, suggested_by_ai=True)
+
+    if request.method == "POST":
+        if 'add_activity' in request.POST:
+            form = ActivityForm(request.POST)
+            if form.is_valid():
+                new_activity = form.save(commit=False)
+                new_activity.user = request.user
+                new_activity.save()
+                return redirect('activities_view')
+        elif 'move_to_regular' in request.POST:
+            activity_id = request.POST.get('activity_id')
+            activity = get_object_or_404(Activity, id=activity_id, user=request.user)
+            activity.suggested_by_ai = False
+            activity.save()
+            return redirect('activities_view')
+
+    # Prepare context
+    context = {
+        'user_activities': user_activities,
+        'ai_suggested_activities': ai_suggested_activities,
+        'form': ActivityForm(),
+    }
+
+    return render(request, 'activities.html', context)
+
+
+
+
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Activity
+from .forms import ActivityForm
+
+def activities_view(request):
+    user_activities = Activity.objects.filter(user=request.user, suggested_by_ai=False)
+    ai_suggested_activities = Activity.objects.filter(user=request.user, suggested_by_ai=True)
+
+    # Initialize forms
+    form = ActivityForm()
+    edit_form = ActivityForm()  # Will be populated with specific activity data later
+    delete_activity_id = None  # Will hold the ID of the activity to be deleted
+
+    if request.method == "POST":
+        if 'add_activity' in request.POST:
+            form = ActivityForm(request.POST)
+            if form.is_valid():
+                new_activity = form.save(commit=False)
+                new_activity.user = request.user
+                new_activity.save()
+                return redirect('activities_view')
+        elif 'edit_activity' in request.POST:
+            activity_id = request.POST.get('activity_id')
+            activity = get_object_or_404(Activity, id=activity_id, user=request.user)
+            edit_form = ActivityForm(request.POST, instance=activity)
+            if edit_form.is_valid():
+                edit_form.save()
+                return redirect('activities_view')
+        elif 'delete_activity' in request.POST:
+            delete_activity_id = request.POST.get('activity_id')
+            activity = get_object_or_404(Activity, id=delete_activity_id, user=request.user)
+            activity.delete()
+            return redirect('activities_view')
+        elif 'move_to_regular' in request.POST:
+            activity_id = request.POST.get('activity_id')
+            activity = get_object_or_404(Activity, id=activity_id, user=request.user)
+            activity.suggested_by_ai = False
+            activity.save()
+            return redirect('activities_view')
+
+    context = {
+        'user_activities': user_activities,
+        'ai_suggested_activities': ai_suggested_activities,
+        'form': form,
+        'edit_form': edit_form,
+        'delete_activity_id': delete_activity_id,
+    }
+
+    return render(request, 'activities.html', context)
+
+# Update View
+def update_activity(request, activity_id):
+    activity = get_object_or_404(Activity, id=activity_id, user=request.user)
+
+    if request.method == "POST":
+        form = ActivityForm(request.POST, instance=activity)
+        if form.is_valid():
+            form.save()
+            return redirect('activities_view')
+    else:
+        form = ActivityForm(instance=activity)
+
+    context = {'form': form}
+    return render(request, 'update_activity.html', context)
+
+# Delete View
+def delete_activity(request, activity_id):
+    activity = get_object_or_404(Activity, id=activity_id, user=request.user)
+    if request.method == "POST":
+        activity.delete()
+        return redirect('activities_view')
+
+    context = {'activity': activity}
+    return render(request, 'delete_activity.html', context)
 
 

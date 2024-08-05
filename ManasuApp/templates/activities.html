@@ -1,0 +1,148 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Activities</title>
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>Your Activities</h1>
+
+        <!-- Button to trigger modal for adding a new activity -->
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addActivityModal">
+            + Add Activity
+        </button>
+
+        <!-- Regular Activities -->
+        <h2 class="mt-4">Regular Activities</h2>
+        <ul class="list-group">
+            {% for activity in user_activities %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ activity.title }} - {{ activity.due_date }}
+                <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editActivityModal" 
+                        data-id="{{ activity.id }}" data-title="{{ activity.title }}" data-description="{{ activity.description }}" data-due_date="{{ activity.due_date }}">
+                    Edit
+                </button>
+                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteActivityModal" 
+                        data-id="{{ activity.id }}">
+                    Delete
+                </button>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <!-- AI-Suggested Activities -->
+        <h2 class="mt-4">AI-Suggested Activities</h2>
+        <ul class="list-group">
+            {% for activity in ai_suggested_activities %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ activity.title }} - {{ activity.due_date }}
+                <form method="post" action="{% url 'activities_view' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="activity_id" value="{{ activity.id }}">
+                    <button type="submit" name="move_to_regular" class="btn btn-sm btn-success">Move to Regular</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <!-- Modal for adding a new activity -->
+        <div class="modal fade" id="addActivityModal" tabindex="-1" aria-labelledby="addActivityModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addActivityModalLabel">Add New Activity</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="post" action="{% url 'activities_view' %}">
+                            {% csrf_token %}
+                            {{ form.as_p }}
+                            <button type="submit" name="add_activity" class="btn btn-primary">Save</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for editing an activity -->
+        <div class="modal fade" id="editActivityModal" tabindex="-1" aria-labelledby="editActivityModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editActivityModalLabel">Edit Activity</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="post" action="{% url 'activities_view' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="activity_id" id="edit-activity-id">
+                            {{ edit_form.as_p }}
+                            <button type="submit" name="edit_activity" class="btn btn-primary">Save Changes</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for deleting an activity -->
+        <div class="modal fade" id="deleteActivityModal" tabindex="-1" aria-labelledby="deleteActivityModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteActivityModalLabel">Delete Activity</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete this activity?</p>
+                        <form method="post" action="{% url 'activities_view' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="activity_id" id="delete-activity-id">
+                            <button type="submit" name="delete_activity" class="btn btn-danger">Yes, Delete</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+
+    <script>
+        var editActivityModal = document.getElementById('editActivityModal');
+        editActivityModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var id = button.getAttribute('data-id');
+            var title = button.getAttribute('data-title');
+            var description = button.getAttribute('data-description');
+            var due_date = button.getAttribute('data-due_date');
+            
+            var modalTitle = editActivityModal.querySelector('.modal-title');
+            var editIdInput = editActivityModal.querySelector('#edit-activity-id');
+            var titleInput = editActivityModal.querySelector('#id_title');
+            var descriptionInput = editActivityModal.querySelector('#id_description');
+            var dueDateInput = editActivityModal.querySelector('#id_due_date');
+
+            modalTitle.textContent = 'Edit Activity: ' + title;
+            editIdInput.value = id;
+            titleInput.value = title;
+            descriptionInput.value = description;
+            dueDateInput.value = due_date;
+        });
+
+        var deleteActivityModal = document.getElementById('deleteActivityModal');
+        deleteActivityModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var id = button.getAttribute('data-id');
+
+            var deleteIdInput = deleteActivityModal.querySelector('#delete-activity-id');
+            deleteIdInput.value = id;
+        });
+    </script>
+</body>
+</html>
