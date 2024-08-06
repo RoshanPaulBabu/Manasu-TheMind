@@ -117,6 +117,7 @@ def user_logout(request):
 
 
 #dashboard view
+import json
 @login_required
 def home(request):
     # Fetch the 2 most recent journal entries for the logged-in user
@@ -141,6 +142,17 @@ def home(request):
     # Calculate percentage of goals achieved
     goal_percentage = (achieved_goals / total_goals * 100) if total_goals > 0 else 0
 
+    # Fetch mental health scores for the past week
+    past_week = [today - datetime.timedelta(days=i) for i in range(7)]
+    mental_health_scores = MentalHealthScore.objects.filter(user=request.user, assessment_date__date__in=past_week).order_by('assessment_date')
+
+    # Create a dictionary with dates as keys and scores as values
+    scores_dict = {score.assessment_date.date(): float(score.score) for score in mental_health_scores}
+    scores_list = [scores_dict.get(day, 0) for day in past_week]  # Default to 0 if no score for the day
+
+    # Format the dates for the past week
+    dates_list = [day.strftime("%Y-%m-%d") for day in past_week]
+
     context = {
         'entries': entries,
         'mood': mood,
@@ -149,11 +161,11 @@ def home(request):
         'completed_activities': completed_activities,
         'total_activities': total_activities,
         'goal_percentage': goal_percentage,
+        'mental_health_scores': json.dumps(scores_list[::-1]),  # Pass data in reverse order to match the labels
+        'dates_list': json.dumps(dates_list[::-1]),  # Pass dates in reverse order
     }
     
     return render(request, 'home.html', context)
-
-
 @login_required
 def questions(request):
     user_profile = request.user.profile
@@ -548,6 +560,7 @@ def log_mood(request):
             mood=mood,
             intensity=intensity,
             notes=notes
+            
         )
         mood_log.save()
 
