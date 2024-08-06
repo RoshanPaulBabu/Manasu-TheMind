@@ -260,7 +260,7 @@ chatbot_generation_config = {
 chatbot_model = genai.GenerativeModel(
     model_name="gemini-1.5-flash",
     generation_config=chatbot_generation_config,
-    system_instruction = "You are a mental health chatbot providing empathetic and practical support based on recent activities, mood logs, and other user data. Engage with users to understand their experiences and factors contributing to their current state. Offer actionable tips and strategies to improve their mental well-being. Aim to gather sufficient data to determine the user's mental health condition and provide a score out of 100. Ensure to conclude the conversation within 10 messages. If this is achieved, trigger the view 'analyze_and_update_session' by including the command '[analyze_and_update_session]' in your response, and say: 'Hope you enjoyed our conversation. Check out the updates I made for you.'",
+    system_instruction = "You are a mental health chatbot providing empathetic and practical support based on recent activities, mood logs, and other user data. Engage with users to understand their experiences and factors contributing to their current state. Offer actionable tips and strategies to improve their mental well-being. Aim to gather sufficient data to determine the user's mental health condition and provide a score out of 100,Ensure the chat is short and concise, if its long give in points",
 
 )
 
@@ -280,12 +280,13 @@ def chat_with_ai(request):
     formatted_history = []
     for chat in reversed(chat_history):
         role = 'user' if chat.sender == 'user' else 'model'
-        formatted_history.append({
-            "role": role,
-            "parts": [chat.message],
-        })
+        if chat.message.strip():  # Ensure message is not empty
+            formatted_history.append({
+                "role": role,
+                "parts": [chat.message],
+            })
 
-    # Gather the last 3 journal entries
+        # Gather the last 3 journal entries
     last_journal_entries = JournalEntry.objects.filter(user=user).order_by('-created_at')[:3]
     last_journal_entries_text = "\n".join([f"{entry.title}: {entry.content}" for entry in last_journal_entries])
 
@@ -328,52 +329,77 @@ def chat_with_ai(request):
         f"Pending Goals:\n{pending_goals_text}\n"
         f"Last 3 Mood Logs:\n{last_mood_logs_text}\n"
         "Use this context to provide a thoughtful response to the user's queries."
-    )
+    ).strip()
 
     if request.method == 'POST':
-        user_message = request.POST.get('message')
+        user_message = request.POST.get('message', '').strip()
+        
+        if not user_message:
+            return render(request, 'chat.html', {
+                'error': 'Please enter a message.',
+                'chat_history': Chat.objects.filter(user=user).order_by('timestamp')
+            })
 
-        # Start a chat session with AI
-        chat_session = chatbot_model.start_chat(
-            history=[
-                {
-                    "role": "model",
-                    "parts": [system_prompt],
-                },
-                *formatted_history,
-                {
-                    "role": "user",
-                    "parts": [user_message],
-                }
-            ]
-        )
+        # Ensure system_prompt and formatted_history are not empty
+        if not system_prompt and not formatted_history:
+            return render(request, 'chat.html', {
+                'error': 'Unable to process request due to missing context.',
+                'chat_history': Chat.objects.filter(user=user).order_by('timestamp')
+            })
 
-        request.session['interaction_count'] += 1
-        print(f"Updated interaction count: {request.session['interaction_count']}")
+        try:
+            # Start a chat session with AI
+            chat_session = chatbot_model.start_chat(
+                history=[
+                    {
+                        "role": "model",
+                        "parts": [system_prompt],
+                    } if system_prompt else None,
+                    *formatted_history,
+                    {
+                        "role": "user",
+                        "parts": [user_message],
+                    }
+                ]
+            )
 
-        # Check if the interaction count has reached the threshold
-        if request.session['interaction_count'] >= 20:  # Example threshold
-            # Reset the counter
-            request.session['interaction_count'] = 0
-            print("Interaction count threshold reached. Triggering analyze_and_update_session view.")
-            # Trigger the analyze_and_update_session view
-            return analyze_and_update_session(request)
+            request.session['interaction_count'] += 1
+            print(f"Updated interaction count: {request.session['interaction_count']}")
 
-        ai_response = chat_session.send_message(user_message)
-        ai_text = ai_response.text
+            # Check if the interaction count has reached the threshold
+            if request.session['interaction_count'] >= 20:  # Example threshold
+                # Reset the counter
+                request.session['interaction_count'] = 0
+                print("Interaction count threshold reached. Triggering analyze_and_update_session view.")
+                # Trigger the analyze_and_update_session view
+                return analyze_and_update_session(request)
 
-        # Save chat history
-        Chat.objects.create(user=user, message=user_message, sender='user')
-        Chat.objects.create(user=user, message=ai_text, sender='bot')
+            ai_response = chat_session.send_message(user_message)
+            ai_text = ai_response.text
 
-        # Check if AI response includes the trigger
-        if "[analyze_and_update_session]" in ai_text:
-            print("Trigger found in AI response. Redirecting to analyze_and_update_session view.")
-            return redirect('analyze_and_update_session')
+            # Save chat history
+            Chat.objects.create(user=user, message=user_message, sender='user')
+            Chat.objects.create(user=user, message=ai_text, sender='bot')
 
-        return render(request, 'chat.html', {'response': ai_text})
+            # # Check if AI response includes the trigger
+            # if "[analyze_and_update_session]" in ai_text:
+            #     print("Trigger found in AI response. Redirecting to analyze_and_update_session view.")
+            #     return redirect('analyze_and_update_session')
 
-    return render(request, 'chat.html')
+            return render(request, 'chat.html', {
+                'response': ai_text,
+                'chat_history': Chat.objects.filter(user=user).order_by('timestamp')
+            })
+
+        except ValueError as e:
+            return render(request, 'chat.html', {
+                'error': f"An error occurred: {str(e)}",
+                'chat_history': Chat.objects.filter(user=user).order_by('timestamp')
+            })
+
+    return render(request, 'chat.html', {
+        'chat_history': Chat.objects.filter(user=user).order_by('timestamp')
+    })
 
 
 
