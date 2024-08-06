@@ -1,15 +1,61 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mental Health Summary</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f4f7f6;
+            font-family: 'Arial', sans-serif;
+        }
+        .container {
+            margin-top: 30px;
+        }
+        .card {
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background-color: #ffffff;
+            padding: 20px;
+        }
+        .card-header {
+            background-color: #007bff;
+            color: white;
+            border-bottom: 1px solid #dee2e6;
+            border-radius: 10px 10px 0 0;
+            padding: 15px;
+        }
+        .card-body {
+            padding: 15px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #004085;
+        }
+    </style>
 </head>
 <body>
-    <h2>Mental Health Summary</h2>
-
-    <p><strong>Mental Health Problem:</strong> {{ summary.user.profile.mental_health_problem.name }}</p>
-    <p><strong>Assessment Date:</strong> {{ summary.assessment_date }}</p>
-    <p><strong>Summary:</strong> {{ summary.summary|safe }}</p>
-
-    <a href="{% url 'home' %}">Return to Home</a>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h2>Mental Health Summary</h2>
+            </div>
+            <div class="card-body">
+                <p><strong>Mental Health Problem:</strong> {{ summary.user.profile.mental_health_problem.name }}</p>
+                <p><strong>Assessment Date:</strong> {{ summary.assessment_date }}</p>
+                <p><strong>Summary:</strong> {{ summary.summary|safe }}</p>
+                <a href="{% url 'home' %}" class="btn btn-primary">Return to Home</a>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

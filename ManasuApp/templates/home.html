@@ -145,33 +145,49 @@
             <!-- Mood and Activity Cards -->
             <div class="row">
                 <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-primary shadow h-100 py-2 fade-in">
+                    <a href="{% url 'log_mood' %}" class="nav-link"><div class="card border-left-primary shadow h-100 py-2 fade-in">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Mood (Today)</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">Good</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ mood }}</div>
                                 </div>
                                 <div class="col-auto">
-                                    <i class="fas fa-smile fa-2x text-gray-300"></i>
+                                    <!-- Display emoji based on mood -->
+                                    {% if mood == 'happy' %}
+                                        <i class="fas fa-smile fa-2x text-success"></i>
+                                    {% elif mood == 'sad' %}
+                                        <i class="fas fa-sad-tear fa-2x text-primary"></i>
+                                    {% elif mood == 'angry' %}
+                                        <i class="fas fa-angry fa-2x text-danger"></i>
+                                    {% elif mood == 'anxious' %}
+                                        <i class="fas fa-anxious fa-2x text-warning"></i>
+                                    {% elif mood == 'neutral' %}
+                                        <i class="fas fa-meh fa-2x text-secondary"></i>
+                                    {% elif mood == 'excited' %}
+                                        <i class="fas fa-grin-beam fa-2x text-info"></i>
+                                    {% else %}
+                                        <i class="fas fa-question fa-2x text-muted"></i>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div></a>
                 </div>
 
                 <div class="col-xl-3 col-md-6 mb-4">
                     <div class="card border-left-success shadow h-100 py-2 fade-in">
                         <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
+                            <a href="{% url 'activities_view' %}" class="nav-link"> <div class="row no-gutters align-items-center">
+                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Activities Completed</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">3/5</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ completed_activities }}/{{ total_activities }}</div>
                                 </div>
+                          
                                 <div class="col-auto">
                                     <i class="fas fa-check-circle fa-2x text-gray-300"></i>
                                 </div>
-                            </div>
+                            </div>  </a>
                         </div>
                     </div>
                 </div>
@@ -184,7 +200,8 @@
                                     <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Goal Progress</div>
                                     <div class="row no-gutters align-items-center">
                                         <div class="col-auto">
-                                            <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">60%</div>
+                            
+                                            <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">{{ goal_percentage|floatformat:0 }}%</div>
                                         </div>
                                         <div class="col">
                                             <div class="progress progress-sm mr-2">
@@ -241,14 +258,17 @@
                         </div>
                         <div class="card-body">
                             <div class="mb-3">
-                                <div class="small text-gray-500">June 21, 2023</div>
-                                <p>Feeling optimistic about the future. Made progress on my goals today.</p>
+                                {% for entry in entries %}
+                                <div class="mb-3">
+                                    <small class="text-muted">Created on: {{ entry.created_at| date:"F j, Y, g:i a" }} </small>
+                                    <h4>{{ entry.title }}</h4>
+                                    <p>{{ entry.content|truncatewords:30 }}</p>
+                                </div>
+                            {% empty %}
+                                <p>No entries found.</p>
+                            {% endfor %}
                             </div>
-                            <div class="mb-3">
-                                <div class="small text-gray-500">June 20, 2023</div>
-                                <p>Had a challenging day, but practiced my coping strategies.</p>
-                            </div>
-                            <a href="#" class="btn btn-primary btn-sm">View All Entries</a>
+                            <a href="{% url 'journal_entry_list' %}" class="btn btn-primary btn-sm">View All Entries</a>
                         </div>
                     </div>
                 </div>

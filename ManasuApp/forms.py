@@ -1,5 +1,5 @@
 from django import forms
-from .models import Activity, Goal
+from .models import *
 
 class ActivityForm(forms.ModelForm):
     class Meta:
@@ -13,3 +13,8 @@ class GoalForm(forms.ModelForm):
     class Meta:
         model = Goal
         fields = ['title', 'description', 'target_date', 'achieved']
+
+class JournalEntryForm(forms.ModelForm):
+    class Meta:
+        model = JournalEntry
+        fields = ['title', 'content']

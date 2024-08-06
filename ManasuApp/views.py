@@ -11,6 +11,7 @@ import os
 import datetime
 import google.generativeai as genai
 from django.utils import timezone
+from django.utils.timezone import now
 
 User = get_user_model()
 
@@ -78,7 +79,11 @@ def register(request):
             if user is not None:
                 login(request, user)
                 messages.success(request, 'Your account has been registered successfully!')
-                return redirect('questions')
+                # Redirect based on the selected mental health problem
+                if mental_health_problem.name == 'Other':  # assuming the "name" field contains the problem name
+                    return redirect('chat_with_ai')
+                else:
+                    return redirect('questions')
         except Exception as e:
             if user:
                 user.delete()
@@ -114,7 +119,39 @@ def user_logout(request):
 #dashboard view
 @login_required
 def home(request):
-    return render(request, 'home.html')
+    # Fetch the 2 most recent journal entries for the logged-in user
+    entries = JournalEntry.objects.filter(user=request.user).order_by('-created_at')[:2]
+    
+    # Fetch the mood log for the current day
+    today = now().date()
+    mood_log = MoodLog.objects.filter(user=request.user, timestamp__date=today).first()
+    
+    mood = mood_log.mood if mood_log else 'No mood logged'
+    intensity = mood_log.intensity if mood_log else 'N/A'
+    notes = mood_log.notes if mood_log else 'No additional notes'
+    
+    # Fetch activities
+    total_activities = Activity.objects.filter(user=request.user).count()
+    completed_activities = Activity.objects.filter(user=request.user, completed=True).count()
+    
+    # Fetch goals
+    total_goals = Goal.objects.filter(user=request.user).count()
+    achieved_goals = Goal.objects.filter(user=request.user, achieved=True).count()
+    
+    # Calculate percentage of goals achieved
+    goal_percentage = (achieved_goals / total_goals * 100) if total_goals > 0 else 0
+
+    context = {
+        'entries': entries,
+        'mood': mood,
+        'intensity': intensity,
+        'notes': notes,
+        'completed_activities': completed_activities,
+        'total_activities': total_activities,
+        'goal_percentage': goal_percentage,
+    }
+    
+    return render(request, 'home.html', context)
 
 
 @login_required
@@ -520,7 +557,7 @@ def log_mood(request):
     return render(request, 'log_mood.html')
 
 
-from .forms import ActivityForm, GoalForm
+from .forms import ActivityForm, GoalForm, JournalEntryForm
 
 def activities_view(request):
     # Fetch user activities
@@ -653,3 +690,44 @@ def goals_view(request):
     }
 
     return render(request, 'goals.html', context)
+
+
+@login_required
+def journal_entry_list(request):
+    entries = JournalEntry.objects.filter(user=request.user).order_by('-entry_date')
+    return render(request, 'journal_entry_list.html', {'entries': entries})
+
+@login_required
+def journal_entry_create(request):
+    if request.method == 'POST':
+        form = JournalEntryForm(request.POST)
+        if form.is_valid():
+            entry = form.save(commit=False)
+            entry.user = request.user
+            entry.save()
+            return redirect('journal_entry_list')
+    else:
+        form = JournalEntryForm()
+    return render(request, 'journal_entry_form.html', {'form': form})
+
+@login_required
+def journal_entry_update(request, pk):
+    entry = get_object_or_404(JournalEntry, pk=pk, user=request.user)
+    if request.method == 'POST':
+        form = JournalEntryForm(request.POST, instance=entry)
+        if form.is_valid():
+            form.save()
+            return redirect('journal_entry_list')
+    else:
+        form = JournalEntryForm(instance=entry)
+    return render(request, 'journal_entry_form.html', {'form': form})
+
+@login_required
+def journal_entry_delete(request, pk):
+    entry = get_object_or_404(JournalEntry, pk=pk, user=request.user)
+    if request.method == 'POST':
+        entry.delete()
+        return redirect('journal_entry_list')
+    return render(request, 'journal_entry_confirm_delete.html', {'entry': entry})
+
+
