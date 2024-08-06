@@ -321,22 +321,34 @@
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script>
         // Mood Chart
-        var ctx = document.getElementById('moodChart').getContext('2d');
-        var moodChart = new Chart(ctx, {
+        function getWeekday(dateString) {
+            const date = new Date(dateString);
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            return days[date.getDay()];
+        }
+
+        const ctx = document.getElementById('moodChart').getContext('2d');
+        const mentalHealthScores = JSON.parse('{{ mental_health_scores|escapejs }}');
+        const datesList = JSON.parse('{{ dates_list|escapejs }}');
+
+        // Convert dates to weekdays
+        const weekDays = datesList.map(date => getWeekday(date));
+
+        const moodChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                labels: weekDays,
                 datasets: [{
-                    label: 'Mood',
-                    data: [7, 6, 8, 5, 7, 9, 8],
-                    borderColor: '#4e73df',
-                    backgroundColor: 'rgba(78, 115, 223, 0.05)',
+                    label: 'Mental Health Score',
+                    data: mentalHealthScores,
+                    borderColor: '#36b9cc',
+                    backgroundColor: 'rgba(54, 185, 204, 0.05)',
                     pointRadius: 3,
-                    pointBackgroundColor: '#4e73df',
-                    pointBorderColor: '#4e73df',
+                    pointBackgroundColor: '#36b9cc',
+                    pointBorderColor: '#36b9cc',
                     pointHoverRadius: 3,
-                    pointHoverBackgroundColor: '#4e73df',
-                    pointHoverBorderColor: '#4e73df',
+                    pointHoverBackgroundColor: '#36b9cc',
+                    pointHoverBorderColor: '#36b9cc',
                     pointHitRadius: 10,
                     pointBorderWidth: 2,
                     tension: 0.3
@@ -347,7 +359,7 @@
                 scales: {
                     y: {
                         beginAtZero: true,
-                        max: 10,
+                        max: 100, // Adjusted max value to accommodate mental health score range
                         ticks: {
                             maxTicksLimit: 5,
                             padding: 10,
@@ -372,7 +384,7 @@
                 },
                 plugins: {
                     legend: {
-                        display: false
+                        display: true // Set to true to display legend
                     },
                     tooltip: {
                         backgroundColor: 'rgb(255,255,255)',
@@ -406,7 +418,6 @@
                 }
             }
         });
-
         // Community Chart Placeholder
         var communityChart = new ApexCharts(document.querySelector("#communityChart"), {
             series: [{
