@@ -1,25 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ problem.name }} Questionnaire</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .card-container {
+            width: 100%;
+            max-width: 800px;
+        }
+        .card {
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            background: #fff;
+        }
+        .card-header {
+            background-color: #007bff;
+            color: white;
+            padding: 15px;
+            border-radius: 10px 10px 0 0;
+        }
+        .card-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        .question-container {
+            display: none; /* Hide all questions by default */
+        }
+        .question-container.active {
+            display: block; /* Show the active question */
+            animation: fadeIn 0.5s ease;
+        }
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .submit-btn {
+            display: none; /* Hide the submit button by default */
+        }
+        .submit-btn.show {
+            display: block; /* Show the submit button on the last question */
+        }
+        .form-check-input:checked ~ .form-check-label {
+            color: #007bff;
+        }
+        .form-check-label {
+            cursor: pointer;
+        }
+        .form-control {
+            border-radius: 5px;
+        }
+        .btn {
+            border-radius: 5px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #004085;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+            border-color: #545b62;
+        }
+        .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        .btn-success:hover {
+            background-color: #218838;
+            border-color: #1e7e34;
+        }
 
-<div class="container">
-    <h1>{{ problem.name }} Questionnaire</h1>
-    <form method="post">
-        {% csrf_token %}
-        {% for question in questions %}
-            <div class="question-container">
-                <h3>{{ question.text }}</h3>
-                {% if question.question_type == 'MC' %}
-                    {% for option in question.options.all %}
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="question_{{ question.id }}" id="option_{{ option.id }}" value="{{ option.id }}" required>
-                            <label class="form-check-label" for="option_{{ option.id }}">
-                                {{ option.text }}
-                            </label>
-                        </div>
-                    {% endfor %}
-                {% elif question.question_type == 'OE' %}
-                    <textarea class="form-control" name="question_{{ question.id }}" rows="3" required></textarea>
-                {% endif %}
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="card-container">
+        <div class="card">
+            <div class="card-header">
+                <h1>{{ problem.name }} Questionnaire</h1>
             </div>
-        {% endfor %}
-        <button type="submit" class="btn btn-primary mt-3">Submit</button>
-    </form>
-</div>
+            <form method="post" id="questionnaireForm">
+                {% csrf_token %}
+                {% for question in questions %}
+                    <div class="question-container" id="question_{{ question.id }}">
+                        <h3 class="mb-4">{{ question.text }}</h3>
+                        {% if question.question_type == 'MC' %}
+                            {% for option in question.options.all %}
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="question_{{ question.id }}" id="option_{{ option.id }}" value="{{ option.id }}" required>
+                                    <label class="form-check-label" for="option_{{ option.id }}">
+                                        {{ option.text }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        {% elif question.question_type == 'OE' %}
+                            <textarea class="form-control" name="question_{{ question.id }}" rows="3" required></textarea>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                <div class="navigation-buttons">
+                    <button type="button" class="btn btn-secondary" id="prevBtn"><i class="fas fa-arrow-left"></i> Previous</button>
+                    <button type="button" class="btn btn-primary" id="nextBtn">Next <i class="fas fa-arrow-right"></i></button>
+                    <button type="submit" class="btn btn-success submit-btn" id="submitBtn">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        let currentQuestionIndex = 0;
+        const questions = document.querySelectorAll('.question-container');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const submitBtn = document.getElementById('submitBtn');
+
+        function showQuestion(index) {
+            questions.forEach((question, i) => {
+                question.classList.toggle('active', i === index);
+            });
+            prevBtn.style.display = index === 0 ? 'none' : 'inline-block';
+            nextBtn.style.display = index === questions.length - 1 ? 'none' : 'inline-block';
+            submitBtn.style.display = index === questions.length - 1 ? 'inline-block' : 'none';
+        }
+
+        prevBtn.addEventListener('click', () => {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                showQuestion(currentQuestionIndex);
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                showQuestion(currentQuestionIndex);
+            }
+        });
+
+        // Initialize
+        showQuestion(currentQuestionIndex);
+    </script>
+</body>
+</html>

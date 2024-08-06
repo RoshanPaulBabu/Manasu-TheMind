@@ -9,179 +9,192 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
 
-body {
-  font-family: 'Poppins', sans-serif;
-  background-image: url("{% static 'img/max-van-den-oetelaar-buymYm3RQ3U-unsplash.jpg' %}");
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background-color: #f0f8f0;
-}
-.form-container {
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 20px;
-  padding: 40px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 800px;
-}
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-image: url("{% static 'img/max-van-den-oetelaar-buymYm3RQ3U-unsplash.jpg' %}");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f8f0;
+        }
 
-.registration-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
+        .form-container {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+        }
 
-h2 {
-  text-align: center;
-  color: #4CAF50;
-  margin-bottom: 30px;
-}
+        .registration-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
 
-.form-row {
-  display: flex;
-  gap: 30px;
-}
+        h2 {
+            text-align: center;
+            color: #4CAF50;
+            margin-bottom: 30px;
+        }
 
-.form-column {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
+        .form-row {
+            display: flex;
+            gap: 30px;
+        }
 
-.form-group {
-  position: relative;
-}
+        .form-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
 
-input, select, textarea {
-  width: 100%;
-  padding: 10px;
-  border: none;
-  border-bottom: 2px solid #4CAF50;
-  background-color: transparent;
-  font-size: 16px;
-  transition: all 0.3s ease;
-}
+        .form-group {
+            position: relative;
+        }
 
-input::placeholder, select::placeholder, textarea::placeholder {
-  color: #666;
-}
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-bottom: 2px solid #4CAF50;
+            background-color: transparent;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
 
-input:focus, select:focus, textarea:focus {
-  outline: none;
-  border-bottom-color: #45a049;
-}
+        input::placeholder, select::placeholder, textarea::placeholder {
+            color: #666;
+        }
 
-label {
-  display: none; /* Hide the label */
-}
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-bottom-color: #45a049;
+        }
 
-select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 0 0 .293 4.707l5 5a1 1 0 0 0 1.414 0l5-5a1 1 0 1 0-1.414-1.414z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-}
+        label {
+            display: none; /* Hide the label */
+        }
 
-.submit-btn {
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  padding: 15px;
-  font-size: 18px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  align-self: center;
-  width: 50%;
-}
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 0 0 .293 4.707l5 5a1 1 0 0 0 1.414 0l5-5a1 1 0 1 0-1.414-1.414z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+        }
 
-.submit-btn:hover {
-  background-color: #45a049;
-}
+        .submit-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            align-self: center;
+            width: 50%;
+        }
 
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+        .submit-btn:hover {
+            background-color: #45a049;
+        }
 
-.form-group {
-  animation: fadeIn 0.5s ease forwards;
-  opacity: 0;
-}
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-.form-column:nth-child(1) .form-group:nth-child(1) { animation-delay: 0.1s; }
-.form-column:nth-child(1) .form-group:nth-child(2) { animation-delay: 0.2s; }
-.form-column:nth-child(1) .form-group:nth-child(3) { animation-delay: 0.3s; }
-.form-column:nth-child(1) .form-group:nth-child(4) { animation-delay: 0.4s; }
-.form-column:nth-child(1) .form-group:nth-child(5) { animation-delay: 0.5s; }
-.form-column:nth-child(1) .form-group:nth-child(6) { animation-delay: 0.6s; }
+        .form-group {
+            animation: fadeIn 0.5s ease forwards;
+            opacity: 0;
+        }
 
-.form-column:nth-child(2) .form-group:nth-child(1) { animation-delay: 0.15s; }
-.form-column:nth-child(2) .form-group:nth-child(2) { animation-delay: 0.25s; }
-.form-column:nth-child(2) .form-group:nth-child(3) { animation-delay: 0.35s; }
-.form-column:nth-child(2) .form-group:nth-child(4) { animation-delay: 0.45s; }
-.form-column:nth-child(2) .form-group:nth-child(5) { animation-delay: 0.55s; }
-.form-column:nth-child(2) .form-group:nth-child(6) { animation-delay: 0.65s; }
+        .form-column:nth-child(1) .form-group:nth-child(1) { animation-delay: 0.1s; }
+        .form-column:nth-child(1) .form-group:nth-child(2) { animation-delay: 0.2s; }
+        .form-column:nth-child(1) .form-group:nth-child(3) { animation-delay: 0.3s; }
+        .form-column:nth-child(1) .form-group:nth-child(4) { animation-delay: 0.4s; }
+        .form-column:nth-child(1) .form-group:nth-child(5) { animation-delay: 0.5s; }
+        .form-column:nth-child(1) .form-group:nth-child(6) { animation-delay: 0.6s; }
 
-.submit-btn {
-  animation: fadeIn 0.5s ease forwards;
-  animation-delay: 0.7s;
-  opacity: 0;
-}
+        .form-column:nth-child(2) .form-group:nth-child(1) { animation-delay: 0.15s; }
+        .form-column:nth-child(2) .form-group:nth-child(2) { animation-delay: 0.25s; }
+        .form-column:nth-child(2) .form-group:nth-child(3) { animation-delay: 0.35s; }
+        .form-column:nth-child(2) .form-group:nth-child(4) { animation-delay: 0.45s; }
+        .form-column:nth-child(2) .form-group:nth-child(5) { animation-delay: 0.55s; }
+        .form-column:nth-child(2) .form-group:nth-child(6) { animation-delay: 0.65s; }
 
-.centered-width {
-  width: 70%;
-  margin: 0 auto;
-}
+        .submit-btn {
+            animation: fadeIn 0.5s ease forwards;
+            animation-delay: 0.7s;
+            opacity: 0;
+        }
 
-.messages {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 20px 0;
-}
+        .centered-width {
+            width: 70%;
+            margin: 0 auto;
+        }
 
-.messages li {
-    padding: 10px;
-    border-radius: 4px;
-    margin-bottom: 10px;
-    font-size: 16px;
-}
+        .messages {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+        }
 
-.error { border: 1px solid red; color: red; background-color: #ffe5e5; }
-.success { border: 1px solid green; color: green; background-color: #e5ffe5; }
+        .messages li {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
 
-@media (max-width: 768px) {
-  .form-row {
-    flex-direction: column;
-  }
+        .error { border: 1px solid red; color: red; background-color: #ffe5e5; }
+        .success { border: 1px solid green; color: green; background-color: #e5ffe5; }
 
-  .form-container {
-    max-width: 500px;
-  }
-}
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+            }
+
+            .form-container {
+                max-width: 500px;
+            }
+        }
+
+        .password-container {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
     <div class="form-container">
-        <form method="POST" class="registration-form">
+        <form id="registrationForm" method="POST" class="registration-form">
           {% csrf_token %}
           <h2>Join Our Mental Health Community</h2>
           {% if messages %}
-        <ul class="messages">
-            {% for message in messages %}
-                <li class="{{ message.tags }}">{{ message }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
+          <ul class="messages">
+              {% for message in messages %}
+                  <li class="{{ message.tags }}">{{ message }}</li>
+              {% endfor %}
+          </ul>
+          {% endif %}
           
           <div class="form-row">
             <div class="form-column">
@@ -193,12 +206,13 @@ select {
                 <input type="email" id="your-email" name="your-email" placeholder="Email" required>
               </div>
       
-              <div class="form-group">
+              <div class="form-group password-container">
                 <input type="password" id="password" name="password" placeholder="Password" required>
+                <span class="toggle-password" onclick="togglePasswordVisibility()">👁️</span>
               </div>
       
               <div class="form-group">
-                <input type="date" id="date-of-birth" name="date-of-birth" placeholder="Date of Birth">
+                <input type="date" id="date-of-birth" name="date-of-birth" placeholder="Date of Birth" required>
               </div>
       
               <div class="form-group">
@@ -220,7 +234,7 @@ select {
               </div>
       
               <div class="form-group">
-                <select id="gender" name="gender">
+                <select id="gender" name="gender" required>
                   <option value="" disabled selected>Select Gender</option>
                   <option value="male">Male</option>
                   <option value="female">Female</option>
@@ -245,6 +259,38 @@ select {
       
           <button type="submit" class="submit-btn">Register</button>
         </form>
-      </div>
+    </div>
+    <script>
+        function togglePasswordVisibility() {
+            const passwordField = document.getElementById('password');
+            const togglePasswordIcon = document.querySelector('.toggle-password');
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                togglePasswordIcon.textContent = '🙈';
+            } else {
+                passwordField.type = 'password';
+                togglePasswordIcon.textContent = '👁️';
+            }
+        }
+
+        document.getElementById('registrationForm').addEventListener('submit', function(event) {
+            const dateOfBirth = document.getElementById('date-of-birth').value;
+            if (!isValidDOB(dateOfBirth)) {
+                event.preventDefault();
+                alert('You must be at least 16 years old to register.');
+            }
+        });
+
+        function isValidDOB(dateOfBirth) {
+            const today = new Date();
+            const dob = new Date(dateOfBirth);
+            let age = today.getFullYear() - dob.getFullYear();
+            const monthDifference = today.getMonth() - dob.getMonth();
+            if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
+            return age >= 16;
+        }
+    </script>
 </body>
 </html>
