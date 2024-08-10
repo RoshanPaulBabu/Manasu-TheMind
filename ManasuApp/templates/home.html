@@ -145,34 +145,118 @@
             <!-- Mood and Activity Cards -->
             <div class="row">
                 <div class="col-xl-3 col-md-6 mb-4">
-                    <a href="{% url 'log_mood' %}" class="nav-link"><div class="card border-left-primary shadow h-100 py-2 fade-in">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Mood (Today)</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ mood }}</div>
+                    {% if can_log_mood %}
+                        <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#moodLogModal">
+                            <div class="card border-left-primary shadow h-100 py-2 fade-in">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Mood (Today)</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ mood }}</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <!-- Display emoji based on mood -->
+                                            {% if mood == 'happy' %}
+                                                <i class="fas fa-smile fa-2x text-success"></i>
+                                            {% elif mood == 'sad' %}
+                                                <i class="fas fa-sad-tear fa-2x text-primary"></i>
+                                            {% elif mood == 'angry' %}
+                                                <i class="fas fa-angry fa-2x text-danger"></i>
+                                            {% elif mood == 'anxious' %}
+                                                <i class="fas fa-anxious fa-2x text-warning"></i>
+                                            {% elif mood == 'neutral' %}
+                                                <i class="fas fa-meh fa-2x text-secondary"></i>
+                                            {% elif mood == 'excited' %}
+                                                <i class="fas fa-grin-beam fa-2x text-info"></i>
+                                            {% else %}
+                                                <i class="fas fa-question fa-2x text-muted"></i>
+                                            {% endif %}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-auto">
-                                    <!-- Display emoji based on mood -->
-                                    {% if mood == 'happy' %}
-                                        <i class="fas fa-smile fa-2x text-success"></i>
-                                    {% elif mood == 'sad' %}
-                                        <i class="fas fa-sad-tear fa-2x text-primary"></i>
-                                    {% elif mood == 'angry' %}
-                                        <i class="fas fa-angry fa-2x text-danger"></i>
-                                    {% elif mood == 'anxious' %}
-                                        <i class="fas fa-anxious fa-2x text-warning"></i>
-                                    {% elif mood == 'neutral' %}
-                                        <i class="fas fa-meh fa-2x text-secondary"></i>
-                                    {% elif mood == 'excited' %}
-                                        <i class="fas fa-grin-beam fa-2x text-info"></i>
-                                    {% else %}
-                                        <i class="fas fa-question fa-2x text-muted"></i>
-                                    {% endif %}
+                            </div>
+                        </a>
+                    {% else %}
+                        <div class="card border-left-primary shadow h-100 py-2 fade-in">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Mood (Today)</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ mood }}</div>
+                                        <small class="text-muted">Mood logged. Come back 5 hours later to log again.</small>
+                                    </div>
+                                    <div class="col-auto">
+                                        <!-- Display emoji based on mood -->
+                                        {% if mood == 'happy' %}
+                                            <i class="fas fa-smile fa-2x text-success"></i>
+                                        {% elif mood == 'sad' %}
+                                            <i class="fas fa-sad-tear fa-2x text-primary"></i>
+                                        {% elif mood == 'angry' %}
+                                            <i class="fas fa-angry fa-2x text-danger"></i>
+                                        {% elif mood == 'anxious' %}
+                                            <i class="fas fa-anxious fa-2x text-warning"></i>
+                                        {% elif mood == 'neutral' %}
+                                            <i class="fas fa-meh fa-2x text-secondary"></i>
+                                        {% elif mood == 'excited' %}
+                                            <i class="fas fa-grin-beam fa-2x text-info"></i>
+                                        {% else %}
+                                            <i class="fas fa-question fa-2x text-muted"></i>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div></a>
+                    {% endif %}
+                
+                    <!-- Modal for mood logging -->
+                    {% if can_log_mood %}
+                    <div class="modal fade" id="moodLogModal" tabindex="-1" aria-labelledby="moodLogModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="moodLogModalLabel">Log Your Mood</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <!-- Include the mood form inside the modal -->
+                                    <form id="moodForm" method="POST" action="{% url 'log_mood' %}">
+                                        {% csrf_token %}
+                                        <div class="mood-choice">
+                                            <label>
+                                                <input type="radio" name="mood" value="happy" required> 😊 Happy
+                                            </label>
+                                            <label>
+                                                <input type="radio" name="mood" value="sad"> 😢 Sad
+                                            </label>
+                                            <label>
+                                                <input type="radio" name="mood" value="angry"> 😡 Angry
+                                            </label>
+                                            <label>
+                                                <input type="radio" name="mood" value="anxious"> 😰 Anxious
+                                            </label>
+                                            <label>
+                                                <input type="radio" name="mood" value="neutral"> 😐 Neutral
+                                            </label>
+                                            <label>
+                                                <input type="radio" name="mood" value="excited"> 😃 Excited
+                                            </label>
+                                        </div>
+                                        <div class="slider-container">
+                                            <label for="intensity" class="slider-label">Intensity (1-10):</label>
+                                            <input type="range" id="intensity" name="intensity" min="1" max="10" step="1" value="5">
+                                            <span id="intensity-value">5</span>
+                                        </div> 
+                                        <!-- <div>
+                                            <label for="notes">Additional Notes:</label><br>
+                                            <textarea id="notes" name="notes" rows="3" placeholder="Any additional notes about your mood..."></textarea>
+                                        </div> -->
+                                        <button type="submit" class="btn btn-primary">Submit</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
 
                 <div class="col-xl-3 col-md-6 mb-4">
@@ -195,7 +279,7 @@
                 <div class="col-xl-3 col-md-6 mb-4">
                     <div class="card border-left-info shadow h-100 py-2 fade-in">
                         <div class="card-body">
-                            <div class="row no-gutters align-items-center">
+                            <a href="{% url 'goals_view' %}" class="nav-link"> <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Goal Progress</div>
                                     <div class="row no-gutters align-items-center">
@@ -212,7 +296,7 @@
                                 <div class="col-auto">
                                     <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
                                 </div>
-                            </div>
+                            </div></a>
                         </div>
                     </div>
                 </div>
@@ -460,6 +544,7 @@
         });
 
         communityChart.render();
+        
     </script>
 </body>
 </html>

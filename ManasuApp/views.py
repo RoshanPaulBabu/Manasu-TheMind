@@ -130,6 +130,12 @@ def home(request):
     mood = mood_log.mood if mood_log else 'No mood logged'
     intensity = mood_log.intensity if mood_log else 'N/A'
     notes = mood_log.notes if mood_log else 'No additional notes'
+
+    # Determine if the mood log form should be shown based on the 5-hour restriction
+    last_mood_log = MoodLog.objects.filter(user=request.user).order_by('-timestamp').first()
+    can_log_mood = False
+    if not last_mood_log or (now() - last_mood_log.timestamp >= timedelta(hours=5)):
+        can_log_mood = True
     
     # Fetch activities
     total_activities = Activity.objects.filter(user=request.user).count()
@@ -143,7 +149,7 @@ def home(request):
     goal_percentage = (achieved_goals / total_goals * 100) if total_goals > 0 else 0
 
     # Fetch mental health scores for the past week
-    past_week = [today - datetime.timedelta(days=i) for i in range(7)]
+    past_week = [today - timedelta(days=i) for i in range(7)]
     mental_health_scores = MentalHealthScore.objects.filter(user=request.user, assessment_date__date__in=past_week).order_by('assessment_date')
 
     # Create a dictionary with dates as keys and scores as values
@@ -163,9 +169,11 @@ def home(request):
         'goal_percentage': goal_percentage,
         'mental_health_scores': json.dumps(scores_list[::-1]),  # Pass data in reverse order to match the labels
         'dates_list': json.dumps(dates_list[::-1]),  # Pass dates in reverse order
+        'can_log_mood': can_log_mood,  # Control whether to show the mood form
     }
     
     return render(request, 'home.html', context)
+
 @login_required
 def questions(request):
     user_profile = request.user.profile
@@ -573,6 +581,8 @@ def analyze_and_update_session(request):
 
 from django.http import JsonResponse
 
+from django.utils.timezone import now, timedelta
+
 @login_required
 def log_mood(request):
     if request.method == 'POST':
@@ -586,49 +596,15 @@ def log_mood(request):
             mood=mood,
             intensity=intensity,
             notes=notes
-            
         )
         mood_log.save()
 
-        # Optionally, return JSON response for AJAX handling
-        return JsonResponse({'status': 'success'})
+        # Redirect to the home page after logging the mood
+        return redirect('home')
     
     return render(request, 'log_mood.html')
 
-
 from .forms import ActivityForm, GoalForm, JournalEntryForm
-
-def activities_view(request):
-    # Fetch user activities
-    user_activities = Activity.objects.filter(user=request.user, suggested_by_ai=False)
-    ai_suggested_activities = Activity.objects.filter(user=request.user, suggested_by_ai=True)
-
-    if request.method == "POST":
-        if 'add_activity' in request.POST:
-            form = ActivityForm(request.POST)
-            if form.is_valid():
-                new_activity = form.save(commit=False)
-                new_activity.user = request.user
-                new_activity.save()
-                return redirect('activities_view')
-        elif 'move_to_regular' in request.POST:
-            activity_id = request.POST.get('activity_id')
-            activity = get_object_or_404(Activity, id=activity_id, user=request.user)
-            activity.suggested_by_ai = False
-            activity.save()
-            return redirect('activities_view')
-
-    # Prepare context
-    context = {
-        'user_activities': user_activities,
-        'ai_suggested_activities': ai_suggested_activities,
-        'form': ActivityForm(),
-    }
-
-    return render(request, 'activities.html', context)
-
-
-
 
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Activity
