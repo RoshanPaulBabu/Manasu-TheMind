@@ -221,7 +221,7 @@ def questions(request):
 
 
 # Configure Google AI SDK
-genai.configure(api_key="AIzaSyAYVSrCaSRTgMRk_jdEvXyrTuejMKn3i58")
+genai.configure(api_key="")
 
 
 # AI model configuration for the summary generation
