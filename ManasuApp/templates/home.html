@@ -193,6 +193,7 @@
                 </div>
 
                 <div class="col-xl-3 col-md-6 mb-4">
+                    <a href="{% url 'goals_view' %}" class="nav-link">
                     <div class="card border-left-info shadow h-100 py-2 fade-in">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
@@ -215,15 +216,17 @@
                             </div>
                         </div>
                     </div>
+                </a>
                 </div>
 
                 <div class="col-xl-3 col-md-6 mb-4">
+                    <a href="{% url 'chat_with_ai' %}" class="nav-link">
                     <div class="card border-left-warning shadow h-100 py-2 fade-in">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Notifications</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">18</div>
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Chat with ai</div>
+                                    <!-- <div class="h5 mb-0 font-weight-bold text-gray-800">18</div> -->
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-bell fa-2x text-gray-300"></i>
@@ -231,6 +234,7 @@
                             </div>
                         </div>
                     </div>
+                </a>
                 </div>
             </div>
 
@@ -268,47 +272,6 @@
                             {% endfor %}
                             </div>
                             <a href="{% url 'journal_entry_list' %}" class="btn btn-primary btn-sm">View All Entries</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- CBT Tools and Community -->
-            <div class="row">
-                <div class="col-lg-6 mb-4">
-                    <div class="card shadow mb-4 fade-in">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">CBT Tools</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <a href="#" class="btn btn-info btn-circle btn-sm mr-2">
-                                    <i class="fas fa-info-circle"></i>
-                                </a>
-                                Cognitive Restructuring
-                            </div>
-                            <div class="mb-3">
-                                <a href="#" class="btn btn-info btn-circle btn-sm mr-2">
-                                    <i class="fas fa-leaf"></i>
-                                </a>
-                                Mindfulness Exercises
-                            </div>
-                            <div>
-                                <a href="#" class="btn btn-info btn-circle btn-sm mr-2">
-                                    <i class="fas fa-wind"></i>
-                                </a>
-                                Relaxation Techniques
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-6 mb-4">
-                    <div class="card shadow mb-4 fade-in">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">Community Activity</h6>
-                        </div>
-                        <div class="card-body">
-                            <div id="communityChart"></div>
                         </div>
                     </div>
                 </div>
