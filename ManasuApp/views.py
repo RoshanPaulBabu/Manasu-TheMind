@@ -221,7 +221,7 @@ def questions(request):
 
 
 # Configure Google AI SDK
-genai.configure(api_key="")
+genai.configure(api_key="AIzaSyAYVSrCaSRTgMRk_jdEvXyrTuejMKn3i58")
 
 
 # AI model configuration for the summary generation
@@ -388,8 +388,6 @@ def chat_with_ai(request):
         "Use this context to provide a thoughtful response to the user's queries."
     ).strip()
     
-    print(system_prompt)
-
     if request.method == 'POST':
         user_message = request.POST.get('message', '').strip()
         

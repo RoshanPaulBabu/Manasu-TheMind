@@ -101,38 +101,38 @@
         <!-- Sidebar -->
         <div class="sidebar d-flex flex-column flex-shrink-0 p-3" style="width: 250px;">
             <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
-                <span class="fs-4">MindWell</span>
+                <span class="fs-4">Manasu</span>
             </a>
             <hr>
             <ul class="nav nav-pills flex-column mb-auto">
                 <li class="nav-item">
-                    <a href="#" class="nav-link active" aria-current="page">
+                    <a href="{% url 'home' %}" class="nav-link active">
                         <i class="fas fa-tachometer-alt me-2"></i>
                         Dashboard
                     </a>
                 </li>
                 <li>
-                    <a href="#" class="nav-link text-white">
-                        <i class="fas fa-chart-line me-2"></i>
-                        Symptom Tracking
+                    <a href="{% url 'chat_with_ai' %}" class="nav-link">
+                        <i class="fas fa-robot me-2"></i>
+                        Chat With AI
                     </a>
                 </li>
                 <li>
-                    <a href="#" class="nav-link text-white">
-                        <i class="fas fa-journal-whills me-2"></i>
-                        Journal
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="nav-link text-white">
+                    <a href="{% url 'activities_view' %}" class="nav-link">
                         <i class="fas fa-brain me-2"></i>
-                        CBT Tools
+                        Activities
                     </a>
                 </li>
                 <li>
-                    <a href="#" class="nav-link text-white">
-                        <i class="fas fa-users me-2"></i>
-                        Community
+                    <a href="{% url 'goals_view' %}" class="nav-link">
+                        <i class="fas fa-bullseye me-2"></i>
+                        Goals
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'journal_entry_list' %}" class="nav-link">
+                        <i class="fas fa-book me-2"></i>
+                        Journal
                     </a>
                 </li>
             </ul>
@@ -194,7 +194,7 @@
                                         {% elif mood == 'angry' %}
                                             <i class="fas fa-angry fa-2x text-danger"></i>
                                         {% elif mood == 'anxious' %}
-                                            <i class="fas fa-anxious fa-2x text-warning"></i>
+                                        <i class="fas fa-grimace fa-2x text-danger"></i>
                                         {% elif mood == 'neutral' %}
                                             <i class="fas fa-meh fa-2x text-secondary"></i>
                                         {% elif mood == 'excited' %}
@@ -277,7 +277,6 @@
                 </div>
 
                 <div class="col-xl-3 col-md-6 mb-4">
-                    <a href="{% url 'goals_view' %}" class="nav-link">
                     <div class="card border-left-info shadow h-100 py-2 fade-in">
                         <div class="card-body">
                             <a href="{% url 'goals_view' %}" class="nav-link"> <div class="row no-gutters align-items-center">
@@ -300,7 +299,6 @@
                             </div></a>
                         </div>
                     </div>
-                </a>
                 </div>
 
                 <div class="col-xl-3 col-md-6 mb-4">
@@ -465,48 +463,6 @@
                 }
             }
         });
-        // Community Chart Placeholder
-        var communityChart = new ApexCharts(document.querySelector("#communityChart"), {
-            series: [{
-                name: 'Activity',
-                data: [35, 40, 45, 50, 49, 60, 70]
-            }],
-            chart: {
-                type: 'bar',
-                height: 350,
-                stacked: true,
-            },
-            plotOptions: {
-                bar: {
-                    horizontal: false,
-                    borderRadius: 5,
-                    columnWidth: '55%',
-                },
-            },
-            dataLabels: {
-                enabled: false
-            },
-            xaxis: {
-                categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
-            },
-            yaxis: {
-                title: {
-                    text: 'Activity Level'
-                }
-            },
-            fill: {
-                opacity: 1
-            },
-            tooltip: {
-                y: {
-                    formatter: function (val) {
-                        return val + " units";
-                    }
-                }
-            }
-        });
-
-        communityChart.render();
         
     </script>
 </body>
