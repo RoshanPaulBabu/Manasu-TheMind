@@ -250,7 +250,7 @@
 
           <div class="form-group centered-width">
             <select id="mental-health-problem" name="mental-health-problem" required>
-              <option value="" disabled selected>Select Mental Health Problem</option>
+              <option value="" disabled selected>What Brings you here? </option>
               {% for problem in mental_health_problems %}
                 <option value="{{ problem.id }}">{{ problem.name }}</option>
               {% endfor %}
