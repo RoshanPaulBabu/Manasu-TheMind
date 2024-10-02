@@ -224,7 +224,7 @@ def questions(request):
 genai.configure(api_key="AIzaSyAYVSrCaSRTgMRk_jdEvXyrTuejMKn3i58")
 
 
-# AI model configuration for the summary generationnss
+# AI model configuration for the summary generationnsss
 summary_generation_config = {
     "temperature": 0.7,
     "top_p": 0.85,
