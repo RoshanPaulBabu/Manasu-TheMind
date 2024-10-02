@@ -52,20 +52,43 @@ jobs:
             sudo systemctl enable docker
           fi
           
-          # Navigate to the project directory
-          cd /home/ubuntu/Manasu-TheMind || exit
-          git stash
 
-          # Clean up untracked files and pull the latest changes
-          git clean -f
-          git pull origin main || exit
+        # Check if any container is running with the image 'roshanpaul/manasu'
+        CONTAINER_ID=$(docker ps -q --filter "ancestor=roshanpaul/manasu")
+
+        if [ -n "$CONTAINER_ID" ]; then
+          echo "Container is running with image 'roshanpaul/manasu'. Stopping the container..."
+          # Stop the container
+          docker stop "$CONTAINER_ID"
+
+          echo "Removing the container..."
+          # Remove the container
+          docker rm "$CONTAINER_ID"
+        else
+          echo "No running container found with image 'roshanpaul/manasu'."
+        fi
+
+        # Check if the image exists
+        IMAGE_ID=$(docker images -q roshanpaul/manasu)
+
+        if [ -n "$IMAGE_ID" ]; then
+          echo "Removing the Docker image 'roshanpaul/manasu'..."
+          # Remove the image
+          docker rmi "$IMAGE_ID"
+        else
+          echo "No Docker image found for 'roshanpaul/manasu'."
+        fi
+
+        # Pull the latest version of the image (optional if needed)
+        # docker pull roshanpaul/manasu
+
+        # Create and run a new container from the image 'roshanpaul/manasu'
+        echo "Creating a new container from the image 'roshanpaul/manasu'..."
+        docker run -d -p 80:8000 roshanpaul/manasu
+
+        echo "Container created and running."
+
           
-          # Stop current Docker containers and remove them
-          sudo docker-compose down
-
-          # Pull the latest Docker image and restart containers
-          sudo docker-compose pull
-          sudo docker-compose up -d
         EOF
 
     - name: Clean up SSH key

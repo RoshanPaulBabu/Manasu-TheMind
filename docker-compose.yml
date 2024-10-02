@@ -1,16 +1,5 @@
 services:
-  db:
-    image: postgres:latest  # Use the latest PostgreSQL image
-    environment:
-      POSTGRES_DB: manasudatabase  # Name of the database to create
-      POSTGRES_USER: roshan  # Username for the database
-      POSTGRES_PASSWORD: Roshanpaul  # Password for the database user
-    volumes:
-      - pg_data:/var/lib/postgresql/data  # Persist database data
-    ports:
-      - "5432:5432"  # Expose Postgres port to communicate with external services if necessary
-    restart: always  # Restart container automatically on failure
-
+  
   web:
     build:
       context: .  # Path to the directory containing the Dockerfile
