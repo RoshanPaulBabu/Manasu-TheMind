@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: manasudatabase
+      POSTGRES_USER: roshan
+      POSTGRES_PASSWORD: Roshanpaul
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - default
+    ports:
+      - "5432:5432"  # Expose Postgres port to communicate with external services if necessary
+    restart: always  # Ensures that the container restarts automatically in case of failure
+
+  web:
+    build:
+      context: .  # Path to the directory containing the Dockerfile
+      dockerfile: Dockerfile
+    command: gunicorn Manasu.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - .:/app  # Mount the current directory to /app in the container
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgres://roshan:Roshanpaul@db:5432/manasudatabase  # Use internal Docker service name for DB
+    networks:
+      - default
+    restart: always  # Restarts the web service in case of failure
+
+volumes:
+  pg_data:
+
+networks:
+  default:
+
