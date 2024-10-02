@@ -31,7 +31,7 @@ services:
       - DATABASE_URL=postgres://roshan:Roshanpaul@db:5432/manasudatabase  # Use internal Docker service name for DB
     networks:
       - default
-    restart: always  # Restarts the web service in case of failure
+    restart: always  # Restarts the web service in case of failures
 
 volumes:
   pg_data:
