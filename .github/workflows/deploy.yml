@@ -29,7 +29,7 @@ jobs:
 
     - name: Build Docker Image
       run: |
-        docker build -t roshanpaul/manasu .
+        docker build --no-cache -t roshanpaul/manasu .
 
     - name: Push Docker Image to Docker Hub
       run: |
@@ -51,23 +51,45 @@ jobs:
             sudo systemctl start docker
             sudo systemctl enable docker
           fi
-          
-          # Navigate to the project directory
-          cd /home/ubuntu/Manasu-TheMind || exit
-          git stash
 
-          # Clean up untracked files and pull the latest changes
-          git clean -f
-          git pull origin main || exit
-          
-          # Stop current Docker containers and remove them
-          sudo docker-compose down
+          # Login to Docker Hub on EC2
+          docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" -p "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
 
-          # Pull the latest Docker image and restart containers
-          sudo docker-compose pull
-          sudo docker-compose up -d
+          # Check if any container is running with the image 'roshanpaul/manasu'
+          CONTAINER_ID=$(docker ps -q --filter "ancestor=roshanpaul/manasu")
+
+          if [ -n "$CONTAINER_ID" ]; then
+            echo "Container is running with image 'roshanpaul/manasu'. Stopping the container..."
+            # Stop the container
+            sudo docker stop "$CONTAINER_ID"
+
+            echo "Removing the container..."
+            # Remove the container
+            sudo docker rm "$CONTAINER_ID"
+          else
+            echo "No running container found with image 'roshanpaul/manasu'."
+          fi
+
+          # Check if the image exists
+          IMAGE_ID=$(docker images -q roshanpaul/manasu)
+
+          if [ -n "$IMAGE_ID" ]; then
+            echo "Removing the Docker image 'roshanpaul/manasu'..."
+            # Remove the image
+            sudo docker rmi "$IMAGE_ID"
+          else
+            echo "No Docker image found for 'roshanpaul/manasu'."
+          fi
+
+          # Pull the latest version of the image
+          docker pull roshanpaul/manasu
+
+          # Create and run a new container from the image 'roshanpaul/manasu'
+          echo "Creating a new container from the image 'roshanpaul/manasu'..."
+          sudo docker run -d -p 80:8000 roshanpaul/manasu
+
+          echo "Container created and running."
         EOF
 
     - name: Clean up SSH key
       run: rm ec2_key.pem
-

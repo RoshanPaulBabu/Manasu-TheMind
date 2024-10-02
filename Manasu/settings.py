@@ -83,7 +83,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'manasudatabase',
         'USER': 'roshan',
-        'PASSWORD':'Roshanpaul',
+        'PASSWORD':'ChristeenaBabu',
         'HOST': 'database-1.c7a82ussk6qs.eu-north-1.rds.amazonaws.com',
         'PORT': '5432',
     }
