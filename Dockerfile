@@ -48,6 +48,9 @@ ENV PYTHONUNBUFFERED=1
 # Make port 8000 available to the world outside this container
 EXPOSE 8000
 
+RUN pip install gunicorn
+
+
 # Run Django using Gunicorn
 CMD ["gunicorn", "Manasu.wsgi:application", "--bind", "0.0.0.0:8000"]
 
