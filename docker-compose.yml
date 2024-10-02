@@ -1,39 +1,36 @@
+version: '3.8'  # Specify Docker Compose version
+
 services:
   db:
-    image: postgres:latest
+    image: postgres:latest  # Use the latest PostgreSQL image
     environment:
-      POSTGRES_DB: manasudatabase
-      POSTGRES_USER: roshan
-      POSTGRES_PASSWORD: Roshanpaul
+      POSTGRES_DB: manasudatabase  # Name of the database to create
+      POSTGRES_USER: roshan  # Username for the database
+      POSTGRES_PASSWORD: Roshanpaul  # Password for the database user
     volumes:
-      - pg_data:/var/lib/postgresql/data
-    networks:
-      - default
+      - pg_data:/var/lib/postgresql/data  # Persist database data
     ports:
       - "5432:5432"  # Expose Postgres port to communicate with external services if necessary
-    restart: always  # Ensures that the container restarts automatically in case of failure
+    restart: always  # Restart container automatically on failure
 
   web:
     build:
       context: .  # Path to the directory containing the Dockerfile
-      dockerfile: Dockerfile
-    command: gunicorn Manasu.wsgi:application --bind 0.0.0.0:8000
+      dockerfile: Dockerfile  # Name of the Dockerfile
+    command: python manage.py runserver 0.0.0.0:8000  # Command to run the Django app using the development server
     volumes:
       - .:/app  # Mount the current directory to /app in the container
     ports:
-      - "8000:8000"
+      - "8000:8000"  # Expose Django app on port 8000
     depends_on:
-      - db
+      - db  # Wait for the database service to be ready
     environment:
-      - DEBUG=True
-      - DATABASE_URL=postgres://roshan:Roshanpaul@db:5432/manasudatabase  # Use internal Docker service name for DB
-    networks:
-      - default
-    restart: always  # Restarts the web service in case of failures
+      - DEBUG=True  # Enable Django debug mode
+      - DATABASE_URL=postgres://roshan:Roshanpaul@db:5432/manasudatabase  # Database connection string using internal service name
+    restart: always  # Restart web service in case of failures
 
 volumes:
-  pg_data:
+  pg_data:  # Define a named volume for PostgreSQL data
 
 networks:
-  default:
-
+  default:  # Use the default network for communication between services
