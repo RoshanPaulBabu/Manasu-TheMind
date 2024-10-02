@@ -51,7 +51,7 @@ EXPOSE 8000
 RUN pip install gunicorn
 
 
-# Run Django using Gunicorn
+# Run Django using Gunicorne
 CMD ["gunicorn", "Manasu.wsgi:application", "--bind", "0.0.0.0:8000"]
 
 
