@@ -29,12 +29,12 @@ jobs:
 
     - name: Build Docker Image
       run: |
-        sudo docker build -t roshanpaul/manasu .
+        docker build -t roshanpaul/manasu .
 
     - name: Push Docker Image to Docker Hub
       run: |
         echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
-        sudo docker push roshanpaul/manasu 
+        docker push roshanpaul/manasu 
 
     - name: Deploy to EC2
       run: |
