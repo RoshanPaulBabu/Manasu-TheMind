@@ -423,7 +423,7 @@ def chat_with_ai(request):
             request.session['interaction_count'] += 1
             print(f"Updated interaction count: {request.session['interaction_count']}")
 
-            # Check if the interaction count has reached the threshold
+            # Check if the interaction count has reached the thresholdddd
             if request.session['interaction_count'] >= 6:  # Example threshold
                 # Reset the counter
                 request.session['interaction_count'] = 0
