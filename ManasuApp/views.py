@@ -428,7 +428,7 @@ def chat_with_ai(request):
                 # Reset the counter
                 request.session['interaction_count'] = 0
                 print("Interaction count threshold reached. Triggering analyze_and_update_session view.")
-                # Trigger the analyze_and_update_session vdiew
+                # Trigger the analyze_and_update_session vdiews
                 return analyze_and_update_session(request)
 
             ai_response = chat_session.send_message(user_message)
