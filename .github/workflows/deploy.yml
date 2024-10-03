@@ -51,37 +51,38 @@ jobs:
               sudo systemctl enable docker
             fi
 
+                  # Define container and image names
+            CONTAINER_NAME="manasu_container"
+            IMAGE_NAME="roshanpaul/manasu"
 
-            CONTAINER_ID=$(docker ps -q --filter "ancestor=roshanpaul/manasu")
-
-
-            IMAGE_ID=$(docker images -q roshanpaul/manasu)
-          echo "$IMAGE_ID"
-          if [ -n "$IMAGE_ID" ]; then
-            # Only stop containers running from the specific image
-            CONTAINER_IDS=$(docker ps -q --filter "ancestor=roshanpaul/manasu")
-            echo "-----------------------------------------------------------------"
-            echo "checking $(CONTAINER_IDS)"
-            if [ -n "$CONTAINER_IDS" ]; then
-              sudo docker stop $CONTAINER_IDS
-              sudo docker stop $(docker ps -q)
-              sudo docker comtainer prune
-
+            # Stop and remove the container if it exists
+            if [ $(docker ps -q -f name=$CONTAINER_NAME) ]; then
+                echo "Stopping container: $CONTAINER_NAME"
+                sudo docker stop $CONTAINER_NAME
             fi
-            sudo docker container prune -f
-            sudo docker rmi "$IMAGE_ID"
-          fi
 
+            if [ $(docker ps -aq -f name=$CONTAINER_NAME) ]; then
+                echo "Removing container: $CONTAINER_NAME"
+                sudo docker rm $CONTAINER_NAME
+            fi
 
-            sudo docker pull roshanpaul/manasu
-            
-            # Create and run the new container
-            sudo docker run -d -p 80:8000 roshanpaul/manasu
+            # Remove the image if it exists
+            if [ $(docker images -q $IMAGE_NAME) ]; then
+                echo "Removing image: $IMAGE_NAME"
+                sudo docker rmi $IMAGE_NAME
+            fi
 
-            # Run collectstatic inside the container
+            # Pull the latest version of the image
+            echo "Pulling the latest image: $IMAGE_NAME"
+            sudo docker pull $IMAGE_NAME
+
+            # Run the container with the specified name and port mapping
+            echo "Running container: $CONTAINER_NAME"
+            sudo docker run -d --name $CONTAINER_NAME -p 80:8000 $IMAGE_NAME
+
 
             echo "Static files collected and container running."
-          EOF
+            EOF
 
       - name: Clean up SSH key
         run: rm ec2_key.pem
