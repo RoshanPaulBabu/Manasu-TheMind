@@ -60,6 +60,8 @@ jobs:
           if [ -n "$IMAGE_ID" ]; then
             # Only stop containers running from the specific image
             CONTAINER_IDS=$(docker ps -q --filter "ancestor=roshanpaul/manasu")
+            echo "-----------------------------------------------------------------"
+            echo "checking $(CONTAINER_IDS)"
             if [ -n "$CONTAINER_IDS" ]; then
               sudo docker stop $CONTAINER_IDS
               sudo docker stop $(docker ps -q)
