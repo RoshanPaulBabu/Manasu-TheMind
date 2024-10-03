@@ -43,46 +43,50 @@ jobs:
 
           # SSH into EC2 and deploy
           ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
-            sudo apt-get update
-            
-            if ! command -v docker &> /dev/null; then
-              sudo apt-get install -y docker.io docker-compose
-              sudo systemctl start docker
-              sudo systemctl enable docker
-            fi
+                # Update package index
+                sudo apt-get update
+                
+                # Install Docker and Docker Compose if not already installed
+                if ! command -v docker &> /dev/null; then
+                    echo "Installing Docker and Docker Compose..."
+                    sudo apt-get install -y docker.io docker-compose
+                    sudo systemctl start docker
+                    sudo systemctl enable docker
+                else
+                    echo "Docker is already installed."
+                fi
 
-                  # Define container and image names
-            CONTAINER_NAME="manasu_container"
-            IMAGE_NAME="roshanpaul/manasu"
+                # Define container and image names
+                CONTAINER_NAME="manasu_container"
+                IMAGE_NAME="roshanpaul/manasu"
 
-            # Stop and remove the container if it exists
-            if [ $(docker ps -q -f name=$CONTAINER_NAME) ]; then
-                echo "Stopping container: $CONTAINER_NAME"
-                sudo docker stop $CONTAINER_NAME
-            fi
+                # Stop and remove the container if it exists
+                if [ $(sudo docker ps -q -f name=$CONTAINER_NAME) ]; then
+                    echo "Stopping container: $CONTAINER_NAME"
+                    sudo docker stop $CONTAINER_NAME
+                fi
 
-            if [ $(docker ps -aq -f name=$CONTAINER_NAME) ]; then
-                echo "Removing container: $CONTAINER_NAME"
-                sudo docker rm $CONTAINER_NAME
-            fi
+                if [ $(sudo docker ps -aq -f name=$CONTAINER_NAME) ]; then
+                    echo "Removing container: $CONTAINER_NAME"
+                    sudo docker rm $CONTAINER_NAME
+                fi
 
-            # Remove the image if it exists
-            if [ $(docker images -q $IMAGE_NAME) ]; then
-                echo "Removing image: $IMAGE_NAME"
-                sudo docker rmi $IMAGE_NAME
-            fi
+                # Remove the image if it exists
+                if [ $(sudo docker images -q $IMAGE_NAME) ]; then
+                    echo "Removing image: $IMAGE_NAME"
+                    sudo docker rmi $IMAGE_NAME
+                fi
 
-            # Pull the latest version of the image
-            echo "Pulling the latest image: $IMAGE_NAME"
-            sudo docker pull $IMAGE_NAME
+                # Pull the latest version of the image
+                echo "Pulling the latest image: $IMAGE_NAME"
+                sudo docker pull $IMAGE_NAME
 
-            # Run the container with the specified name and port mapping
-            echo "Running container: $CONTAINER_NAME"
-            sudo docker run -d --name $CONTAINER_NAME -p 80:8000 $IMAGE_NAME
+                # Run the container with the specified name and port mapping
+                echo "Running container: $CONTAINER_NAME"
+                sudo docker run -d --name $CONTAINER_NAME -p 80:8000 $IMAGE_NAME
 
-
-            echo "Static files collected and container running."
-            EOF
+                echo "Container $CONTAINER_NAME is running, serving on port 80."
+          EOF
 
       - name: Clean up SSH key
         run: rm ec2_key.pem
